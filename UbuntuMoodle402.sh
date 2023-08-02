@@ -86,6 +86,7 @@ sudo a2ensite moodle.conf
 systemctl reload apache2
 # Update the php.ini files, required to pass Moodle install check
 sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' /etc/php/8.1/apache2/php.ini
+sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' /etc/php/8.1/cli/php.ini
 sudo sed -i 's/.*post_max_size =.*/post_max_size = 80M/' /etc/php/8.1/apache2/php.ini
 sudo sed -i 's/.*upload_max_filesize =.*/upload_max_filesize = 80M/' /etc/php/8.1/apache2/php.ini
 # Restart Apache to allow changes to take place
