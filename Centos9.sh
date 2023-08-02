@@ -29,27 +29,27 @@ sudo dnf install firewalld
 
 echo "Step 1 has completed."
 
-# Step 2 Set up the firewall
-sudo systemctl enable firewalld
-sudo systemctl start firewalld
-# Set default policies to deny incoming and allow outgoing traffic
-sudo firewall-cmd --set-default-zone=drop
-# Allow SSH (port 22) for remote access
-# Allow HTTP (port 80) and HTTPS (port 443) for web server 
-# Allow MySQL (port 3306) for database access
-sudo firewall-cmd --permanent --add-service=ssh
-sudo firewall-cmd --permanent --add-service=http
-sudo firewall-cmd --permanent --add-service=https
-sudo firewall-cmd --permanent --add-service=mysql
-sudo firewall-cmd --reload
-echo "Step 2 has completed."
+## Step 2 Set up the firewall
+#sudo systemctl enable firewalld
+#sudo systemctl start firewalld
+## Set default policies to deny incoming and allow outgoing traffic
+#sudo firewall-cmd --set-default-zone=drop
+## Allow SSH (port 22) for remote access
+## Allow HTTP (port 80) and HTTPS (port 443) for web server 
+## Allow MySQL (port 3306) for database access
+#sudo firewall-cmd --permanent --add-service=ssh
+#sudo firewall-cmd --permanent --add-service=http
+#sudo firewall-cmd --permanent --add-service=https
+#sudo firewall-cmd --permanent --add-service=mysql
+#sudo firewall-cmd --reload
+#echo "Step 2 has completed."
 
 # Step 3 Set up daily security updates
 sudo dnf install -y dnf-automatic
 sudo sed -i 's/apply_updates = no/apply_updates = yes/' /etc/dnf/automatic.conf
 sudo systemctl enable --now dnf-automatic.timer
 echo "Step 3 has completed."
-"
+
 
 # Step 4 Clone the Moodle repository into /var/www
 # Use MOODLE_401_STABLE branch as CentOS 8 ships with PHP 7.4
@@ -85,13 +85,13 @@ sudo rm local_adminer_moodle42_2021051702.zip
 echo "Step 5 has completed."
 
 
-# Step 6 Set up cron job to run every minute 
-echo "Cron job added for the www-data user."
-CRON_JOB="* * * * * /var/www/moodle/admin/cli/cron.php >/dev/null"
-echo "$CRON_JOB" > /tmp/moodle_cron
-sudo crontab -u www-data /tmp/moodle_cron
-sudo rm /tmp/moodle_cron
-echo "Step 6 has completed."
+## Step 6 Set up cron job to run every minute 
+#echo "Cron job added for the www-data user."
+#CRON_JOB="* * * * * /var/www/moodle/admin/cli/cron.php >/dev/null"
+#echo "$CRON_JOB" > /tmp/moodle_cron
+#sudo crontab -u www-data /tmp/moodle_cron
+#sudo rm /tmp/moodle_cron
+#echo "Step 6 has completed."
 
 # Step 7 Secure the MySQL service and create the database and user for Moodle
 MYSQL_ROOT_PASSWORD=$(openssl rand -base64 6)
