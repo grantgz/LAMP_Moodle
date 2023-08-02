@@ -12,7 +12,7 @@ if [ -n "$WEBSITE_ADDRESS" ]; then
     fi
 else
     # Set the web address to localhost if input is blank
-    WEBSITE_ADDRESS="http://127.0.0.1"
+    WEBSITE_ADDRESS="http://127.0.0.1/"
 fi
 
 
@@ -87,6 +87,7 @@ sudo a2ensite moodle.conf
 systemctl reload apache2
 # Update the php.ini files, required to pass Moodle install check
 sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' /etc/php/7.4/apache2/php.ini
+sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' /etc/php/7.4/cli/php.ini
 sudo sed -i 's/.*post_max_size =.*/post_max_size = 80M/' /etc/php/7.4/apache2/php.ini
 sudo sed -i 's/.*upload_max_filesize =.*/upload_max_filesize = 80M/' /etc/php/7.4/apache2/php.ini
 # Restart Apache to allow changes to take place
@@ -126,6 +127,7 @@ sudo chmod 700 /etc/moodle_installation
 # Create info.txt and add installation details with date and time
 sudo bash -c "echo 'Installation script' > /etc/moodle_installation/info.txt"
 sudo bash -c "echo 'Date and Time of Installation: $(date)' >> /etc/moodle_installation/info.txt"
+sudo bash -c "echo 'Web Address: $WEBSITE_ADDRESS ' >> /etc/moodle_installation/info.txt"
 sudo bash -c "echo 'Moodle SQL user password: $MYSQL_MOODLEUSER_PASSWORD' >> /etc/moodle_installation/info.txt"
 sudo bash -c "echo 'Moodle root user password: $MYSQL_ROOT_PASSWORD' >> /etc/moodle_installation/info.txt"
 sudo bash -c "echo 'The following password is used by admin to log on to Moodle' >> /etc/moodle_installation/info.txt"

@@ -11,7 +11,7 @@ if [ -n "$WEBSITE_ADDRESS" ]; then
     fi
 else
     # Set the web address to localhost if input is blank
-    WEBSITE_ADDRESS="http://127.0.0.1"
+    WEBSITE_ADDRESS="http://127.0.0.1/"
 fi
 
 
