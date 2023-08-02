@@ -9,8 +9,8 @@ sudo apt upgrade -y
 sudo apt-get install -y apache2 php7.4 libapache2-mod-php7.4 php7.4-mysql graphviz aspell git 
 sudo apt-get install -y clamav php7.4-pspell php7.4-curl php7.4-gd php7.4-intl php7.4-mysql ghostscript
 sudo apt-get install -y php7.4-xml php7.4-xmlrpc php7.4-ldap php7.4-zip php7.4-soap php7.4-mbstring
-sudo apt install -y unattended-upgrades ufw
-
+sudo apt-get install -y  ufw unzip
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y unattended-upgrades
 #Install Debian default database MariaDB 
 sudo apt-get install -y mariadb-server mariadb-client
 echo "Step 1 has completed."
@@ -31,7 +31,6 @@ sudo ufw reload
 echo "Step 2 has completed."
 
 
-
 #Step 3 Set up daily security updates
 # Configure unattended-upgrades
 sudo tee /etc/apt/apt.conf.d/50unattended-upgrades <<EOF
@@ -50,7 +49,7 @@ EOF
 sudo systemctl restart unattended-upgrades
 echo "Step 3 has completed."
 
-# Step 4 Clone the Moodle repository into /opt and copy to /var/www
+# Step 4 Clone the Moodle repository into /var/www
 # Use MOODLE_401_STABLE branch as Debian 11 ships with php7.4
 echo "Cloning Moodle repository into /opt and copying to /var/www/"
 echo "Be patient, this can take several minutes."
@@ -78,6 +77,11 @@ sudo sed -i 's/.*post_max_size =.*/post_max_size = 80M/' /etc/php/7.4/apache2/ph
 sudo sed -i 's/.*upload_max_filesize =.*/upload_max_filesize = 80M/' /etc/php/7.4/apache2/php.ini
 # Restart Apache to allow changes to take place
 sudo service apache2 restart
+# Install adminer, phpmyadmin alternative
+cd /var/www/moodle/local 
+sudo wget https://moodle.org/plugins/download.php/28045/local_adminer_moodle42_2021051702.zip
+sudo unzip local_adminer_moodle42_2021051702.zip
+sudo rm local_adminer_moodle42_2021051702.zip 
 echo "Step 5 has completed."
 
 # Step 6 Set up cron job to run every minute 
@@ -92,7 +96,6 @@ echo "Step 6 has completed."
 MYSQL_ROOT_PASSWORD=$(openssl rand -base64 6)
 MYSQL_MOODLEUSER_PASSWORD=$(openssl rand -base64 6)
 MOODLE_ADMIN_PASSWORD=$(openssl rand -base64 6)
-PHPMYADMINUSER_PASSWORD=$(openssl rand -base64 6)
 # Set the root password using mysqladmin
 sudo mysqladmin -u root password "$MYSQL_ROOT_PASSWORD"
 # Create the Moodle database and user
@@ -101,13 +104,19 @@ mysql -u root -p"$MYSQL_ROOT_PASSWORD" <<EOF
 CREATE DATABASE moodle DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER 'moodleuser'@'localhost' IDENTIFIED BY '$MYSQL_MOODLEUSER_PASSWORD';
 GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, CREATE TEMPORARY TABLES, DROP, INDEX, ALTER ON moodle.* TO 'moodleuser'@'localhost';
-CREATE USER 'phpmyadminuser'@'localhost' IDENTIFIED BY '$PHPMYADMINUSER_PASSWORD';
-GRANT ALL PRIVILEGES ON *.* TO 'phpmyadminuser'@'localhost' WITH GRANT OPTION;
-FLUSH PRIVILEGES;
 \q
 EOF
-
 sudo chmod -R 777 /var/www/moodle
+sudo mkdir /etc/moodle_installation
+sudo chmod 700 /etc/moodle_installation
+# Create info.txt and add installation details with date and time
+sudo bash -c 'echo "Installation script" > /etc/moodle_installation/info.txt'
+sudo bash -c 'echo "Date and Time of Installation: $(date)" >> /etc/moodle_installation/info.txt'
+sudo bash -c 'echo "Moodle SQL user  password : $MYSQL_MOODLEUSER_PASSWORD" >> /etc/moodle_installation/info.txt'
+sudo bash -c 'echo "Moodle root user password: $MYSQL_ROOT_PASSWORD" >> /etc/moodle_installation/info.txt'
+sudo bash -c 'echo "The following password is used by admin to log on  to Moodle" >> /etc/moodle_installation/info.txt'
+sudo bash -c 'echo "Moodle Site Password for admin : $MOODLE_ADMIN_PASSWORD" >> /etc/moodle_installation/info.txt'
+
 echo "Step 7 has completed."
 
 #Step 8 Finish the install 
@@ -139,36 +148,11 @@ else
 
 fi
 # Display the generated passwords (if needed, for reference)
-echo "Generated passwords:"
-echo "Your Moodle user SQL password: $MYSQL_MOODLEUSER_PASSWORD. 
-echo The  Moodle user SQL password is the password you will use to connect to the database in tne web based install"
-echo "MYSQL_ROOT_PASSWORD: $MYSQL_ROOT_PASSWORD"
-echo "MYSQL_MOODLEUSER_PASSWORD: $MYSQL_MOODLEUSER_PASSWORD"
-echo "MOODLE_ADMIN_PASSWORD: $MOODLE_ADMIN_PASSWORD"
-echo "PHPMYADMINUSER_PASSWORD: $PHPMYADMINUSER_PASSWORD"
+sudo cat /etc/moodle_installation/info.txt
 #Step 8 has finished"
 
 
-# Step 9 Install phpmyadmin
-sudo apt update
-# Set DEBIAN_FRONTEND to noninteractive
-export DEBIAN_FRONTEND=noninteractive
-sudo apt-get -y install phpmyadmin
-# Clear the DEBIAN_FRONTEND variable after installation
-unset DEBIAN_FRONTEND
-sudo ln -s /usr/share/phpmyadmin /var/www/moodle/phpmyadmin
-sudo cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/phpmyadmin.conf
-sudo sed -i 's|/var/www/html|/usr/share/phpmyadmin|g' /etc/apache2/sites-available/phpmyadmin.conf
-sudo a2ensite phpmyadmin.conf
-sudo systemctl reload apache2
-sudo systemctl restart apache2
-sudo chown -R www-data:www-data /usr/share/phpmyadmin
-sudo chmod -R 755 /usr/share/phpmyadmin
-echo "MYSQL_ROOT_PASSWORD: $MYSQL_ROOT_PASSWORD"
-echo "MYSQL_MOODLEUSER_PASSWORD: $MYSQL_MOODLEUSER_PASSWORD"
-echo "MOODLE_ADMIN_PASSWORD: $MOODLE_ADMIN_PASSWORD"
-echo "PHPMYADMINUSER_PASSWORD: $PHPMYADMINUSER_PASSWORD"
-# Step 9 has finished
+
 
 
 
