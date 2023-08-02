@@ -24,6 +24,9 @@ sudo systemctl enable httpd
 sudo yum install -y mariadb-server
 sudo systemctl start mariadb
 sudo systemctl enable mariadb
+sudo dnf install firewalld
+
+
 echo "Step 1 has completed."
 
 # Step 2 Set up the firewall
@@ -42,11 +45,11 @@ sudo firewall-cmd --reload
 echo "Step 2 has completed."
 
 # Step 3 Set up daily security updates
-sudo yum install -y yum-cron
-sudo sed -i 's/apply_updates = no/apply_updates = yes/' /etc/yum/yum-cron.conf
-sudo systemctl enable yum-cron
-sudo systemctl start yum-cron
+sudo dnf install -y dnf-automatic
+sudo sed -i 's/apply_updates = no/apply_updates = yes/' /etc/dnf/automatic.conf
+sudo systemctl enable --now dnf-automatic.timer
 echo "Step 3 has completed."
+"
 
 # Step 4 Clone the Moodle repository into /var/www
 # Use MOODLE_401_STABLE branch as CentOS 8 ships with PHP 7.4
@@ -58,29 +61,29 @@ cd moodle
 sudo git checkout -t origin/MOODLE_401_STABLE
 echo "Step 4 has completed."
 
-# Step 5 Directories, ownership, permissions and php.ini required by 
+
+# Step 5 Directories, ownership, permissions, and php.ini required by Moodle
 sudo mkdir -p /var/www/moodledata
-sudo chown -R www-data /var/www/moodledata
+sudo chown -R apache:apache /var/www/moodledata
 sudo chmod -R 777 /var/www/moodledata
 sudo chmod -R 755 /var/www/moodle
 # Change the Apache DocumentRoot using sed so Moodle opens at http://webaddress
-sudo cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/moodle.conf
-sudo sed -i 's|/var/www/html|/var/www/moodle|g' /etc/apache2/sites-available/moodle.conf
-sudo a2dissite 000-default.conf
-sudo a2ensite moodle.conf
-systemctl reload apache2
-# Update the php.ini files, required to pass Moodle install check
-sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' /etc/php/7.4/apache2/php.ini
-sudo sed -i 's/.*post_max_size =.*/post_max_size = 80M/' /etc/php/7.4/apache2/php.ini
-sudo sed -i 's/.*upload_max_filesize =.*/upload_max_filesize = 80M/' /etc/php/7.4/apache2/php.ini
+sudo cp /etc/httpd/conf.d/welcome.conf /etc/httpd/conf.d/moodle.conf
+sudo sed -i 's|/var/www/html|/var/www/moodle|g' /etc/httpd/conf.d/moodle.conf
+sudo systemctl restart httpd
+# Update the php.ini files, required to pass the Moodle install check
+sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' /etc/php.ini
+sudo sed -i 's/.*post_max_size =.*/post_max_size = 80M/' /etc/php.ini
+sudo sed -i 's/.*upload_max_filesize =.*/upload_max_filesize = 80M/' /etc/php.ini
 # Restart Apache to allow changes to take place
-sudo service apache2 restart
+sudo systemctl restart httpd
 # Install adminer, phpmyadmin alternative
-cd /var/www/moodle/local 
+cd /var/www/moodle/local
 sudo wget https://moodle.org/plugins/download.php/28045/local_adminer_moodle42_2021051702.zip
 sudo unzip local_adminer_moodle42_2021051702.zip
-sudo rm local_adminer_moodle42_2021051702.zip 
+sudo rm local_adminer_moodle42_2021051702.zip
 echo "Step 5 has completed."
+
 
 # Step 6 Set up cron job to run every minute 
 echo "Cron job added for the www-data user."
