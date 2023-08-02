@@ -124,12 +124,14 @@ sudo chmod -R 777 /var/www/moodle
 sudo mkdir /etc/moodle_installation
 sudo chmod 700 /etc/moodle_installation
 # Create info.txt and add installation details with date and time
-sudo bash -c 'echo "Installation script" > /etc/moodle_installation/info.txt'
-sudo bash -c 'echo "Date and Time of Installation: $(date)" >> /etc/moodle_installation/info.txt'
-sudo bash -c 'echo "Moodle SQL user  password : $MYSQL_MOODLEUSER_PASSWORD" >> /etc/moodle_installation/info.txt'
-sudo bash -c 'echo "Moodle root user password: $MYSQL_ROOT_PASSWORD" >> /etc/moodle_installation/info.txt'
-sudo bash -c 'echo "The following password is used by admin to log on  to Moodle" >> /etc/moodle_installation/info.txt'
-sudo bash -c 'echo "Moodle Site Password for admin : $MOODLE_ADMIN_PASSWORD" >> /etc/moodle_installation/info.txt'
+sudo bash -c "echo 'Installation script' > /etc/moodle_installation/info.txt"
+sudo bash -c "echo 'Date and Time of Installation: $(date)' >> /etc/moodle_installation/info.txt"
+sudo bash -c "echo 'Moodle SQL user password: $MYSQL_MOODLEUSER_PASSWORD' >> /etc/moodle_installation/info.txt"
+sudo bash -c "echo 'Moodle root user password: $MYSQL_ROOT_PASSWORD' >> /etc/moodle_installation/info.txt"
+sudo bash -c "echo 'The following password is used by admin to log on to Moodle' >> /etc/moodle_installation/info.txt"
+sudo bash -c "echo 'Moodle Site Password for admin: $MOODLE_ADMIN_PASSWORD' >> /etc/moodle_installation/info.txt"
+cat /etc/moodle_installation/info.txt
+
 
 echo "Step 7 has completed."
 
