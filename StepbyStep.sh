@@ -1,6 +1,20 @@
 #!/bin/bash
 #Prepare by hardcoding IP address
-WEBSITE_ADDRESS=http://127.0.0.1
+# Prompt for the web address
+read -p "Enter the web address (leave blank for localhost ): " WEBSITE_ADDRESS
+
+# Check if the input is not empty
+if [ -n "$WEBSITE_ADDRESS" ]; then
+    # Validate the input as a valid FQDN or IPv4 address
+    if ! [[ $WEBSITE_ADDRESS =~ ^((http|https):\/\/)?[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/\S*)?$ || $WEBSITE_ADDRESS =~ ^((http|https):\/\/)?[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/\S*)?$ ]]; then
+        echo "Invalid web address. Please enter a valid FQDN or IPv4 address (e.g., http://example.com or http://192.168.1.100)."
+        exit 1
+    fi
+else
+    # Set the web address to localhost if input is blank
+    WEBSITE_ADDRESS="http://127.0.0.1"
+fi
+
 
 # Step 1 LAMP server installaton
 #Update the system and install git, Apache, PHP and modules required by Moodle
