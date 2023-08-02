@@ -67,10 +67,27 @@ sudo mkdir -p /var/www/moodledata
 sudo chown -R apache:apache /var/www/moodledata
 sudo chmod -R 777 /var/www/moodledata
 sudo chmod -R 755 /var/www/moodle
-# Change the Apache DocumentRoot using sed so Moodle opens at http://webaddress
-sudo cp /etc/httpd/conf.d/welcome.conf /etc/httpd/conf.d/moodle.conf
-sudo sed -i 's|/var/www/html|/var/www/moodle|g' /etc/httpd/conf.d/moodle.conf
+# Create the Moodle Apache configuration
+echo "Creating Moodle Apache configuration..."
+sudo tee /etc/httpd/conf.d/moodle.conf << EOF
+<VirtualHost *:80>
+    ServerAdmin webmaster@your_moodle_domain
+    DocumentRoot /var/www/moodle
+
+    <Directory /var/www/moodle>
+        Options FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    CustomLog /var/log/httpd/access.log combined
+    ErrorLog /var/log/httpd/error.log
+</VirtualHost>
+EOF
+
 sudo systemctl restart httpd
+echo "Step 5 has completed."
+
 # Update the php.ini files, required to pass the Moodle install check
 sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' /etc/php.ini
 sudo sed -i 's/.*post_max_size =.*/post_max_size = 80M/' /etc/php.ini
@@ -85,13 +102,13 @@ sudo rm local_adminer_moodle42_2021051702.zip
 echo "Step 5 has completed."
 
 
-## Step 6 Set up cron job to run every minute 
-#echo "Cron job added for the www-data user."
-#CRON_JOB="* * * * * /var/www/moodle/admin/cli/cron.php >/dev/null"
-#echo "$CRON_JOB" > /tmp/moodle_cron
-#sudo crontab -u www-data /tmp/moodle_cron
-#sudo rm /tmp/moodle_cron
-#echo "Step 6 has completed."
+# Step 6 Set up cron job to run every minute 
+echo "Cron job added for the www-data user."
+CRON_JOB="* * * * * /var/www/moodle/admin/cli/cron.php >/dev/null"
+echo "$CRON_JOB" > /tmp/moodle_cron
+sudo crontab -u apache /tmp/moodle_cron
+sudo rm /tmp/moodle_cron
+echo "Step 6 has completed."
 
 # Step 7 Secure the MySQL service and create the database and user for Moodle
 MYSQL_ROOT_PASSWORD=$(openssl rand -base64 6)
@@ -124,7 +141,7 @@ echo "Step 7 has completed."
 
 #Step 8 Finish the install 
 echo "The script will now try to finish the installation. If this fails, log on to your site at $WEBSITE_ADDRESS and follow the prompts."
-INSTALL_COMMAND="sudo -u www-data /usr/bin/php /var/www/moodle/admin/cli/install.php \
+INSTALL_COMMAND="sudo -u apache /usr/bin/php /var/www/moodle/admin/cli/install.php \
     --non-interactive \
     --lang=en \
     --wwwroot=\"$WEBSITE_ADDRESS\" \
