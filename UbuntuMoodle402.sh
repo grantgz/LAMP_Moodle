@@ -9,9 +9,6 @@ if [ -n "$WEBSITE_ADDRESS" ]; then
         echo "Invalid web address. Please enter a valid FQDN or IPv4 address (e.g., http://example.com or http://192.168.1.100)."
         exit 1
     fi
-else
-    # Set the web address to localhost if input is blank
-    WEBSITE_ADDRESS="http://127.0.0.1/"
 fi
 
 
