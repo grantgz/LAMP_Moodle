@@ -1,6 +1,5 @@
 #!/bin/bash
 
-FQDN=""
 # Prompt for the web address
 read -p "Enter the web address: " WEBSITE_ADDRESS
 
