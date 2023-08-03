@@ -1,6 +1,6 @@
 #!/bin/bash
 # Prompt for the web address
-read -p "Enter the web address (leave blank for localhost ): " WEBSITE_ADDRESS
+read -p "Enter the web address: " WEBSITE_ADDRESS
 
 # Check if the input is not empty
 if [ -n "$WEBSITE_ADDRESS" ]; then
