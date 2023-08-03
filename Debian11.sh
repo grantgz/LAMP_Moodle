@@ -1,7 +1,6 @@
 #!/bin/bash
-#Prepare by hardcoding IP address
-# Prompt for the web address
-read -p "Enter the web address: " WEBSITE_ADDRESS
+
+FQDN=""
 
 # Check if the input is not empty
 if [ -n "$WEBSITE_ADDRESS" ]; then
@@ -9,6 +8,9 @@ if [ -n "$WEBSITE_ADDRESS" ]; then
     if ! [[ $WEBSITE_ADDRESS =~ ^((http|https):\/\/)?[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/\S*)?$ || $WEBSITE_ADDRESS =~ ^((http|https):\/\/)?[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/\S*)?$ ]]; then
         echo "Invalid web address. Please enter a valid FQDN or IPv4 address (e.g., http://example.com or http://192.168.1.100)."
         exit 1
+    else
+        # If the input is a valid FQDN, set FQDN to the entered value
+        FQDN="$WEBSITE_ADDRESS"
     fi
 fi
 
