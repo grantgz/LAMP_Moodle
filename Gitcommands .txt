@@ -1,15 +1,17 @@
-wget https://raw.githubusercontent.com/grantgz/LAMP_Moodle/main/Centos9.sh -O /tmp/Centos9.sh
+wget https://raw.githubusercontent.com/steerpike5/LAMP_Moodle/main/Centos9.sh -O /tmp/Centos9.sh
 chmod +x /tmp/Centos9.sh
 /tmp/Centos9.sh
 
-sudo wget https://raw.githubusercontent.com/grantgz/LAMP_Moodle/main/UbuntuMoodle402.sh -O /tmp/UbuntuMoodle402.sh
-sudo chmod +x /tmp/UbuntuMoodle402.sh
-sudo /tmp/UbuntuMoodle402.sh
+sudo wget https://raw.githubusercontent.com/steerpike5/LAMP_Moodle/main/UbuntuMoodle402.sh -O /tmp/UbuntuMoodle402.sh
+sudo chmod +x /tmp/UbuntuMoodle402.sh; sudo /tmp/UbuntuMoodle402.sh
 
 
-wget https://raw.githubusercontent.com/grantgz/LAMP_Moodle/main/Debian11.sh -O /tmp/Centos9.sh
-chmod +x /tmp/Debian11.sh
-/tmp/Debian11.sh
+sudo wget https://raw.githubusercontent.com/steerpike5/LAMP_Moodle/main/Debian11.sh -O /tmp/Debian11.sh
+sudo chmod +x /tmp/Debian11.sh; sudo /tmp/Debian11.sh
 
 http://45.159.211.175/
+http://steerpike.online
 
+wget https://github.com/steerpike5/LAMP_Moodle/raw/FQDN/Debian11.sh
+chmod +x Debian11.sh
+sudo ./Debian11.sh

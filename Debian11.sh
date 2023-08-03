@@ -1,18 +1,25 @@
 #!/bin/bash
 
 FQDN=""
+# Prompt for the web address
+read -p "Enter the web address: " WEBSITE_ADDRESS
 
 # Check if the input is not empty
 if [ -n "$WEBSITE_ADDRESS" ]; then
     # Validate the input as a valid FQDN or IPv4 address
-    if ! [[ $WEBSITE_ADDRESS =~ ^((http|https):\/\/)?[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/\S*)?$ || $WEBSITE_ADDRESS =~ ^((http|https):\/\/)?[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/\S*)?$ ]]; then
+    if [[ $WEBSITE_ADDRESS =~ ^((http|https):\/\/)?[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/\S*)?$ ]]; then
+        # If the input is a valid FQDN, set FQDN to the entered value
+        FQDN="y"
+    elif [[ $WEBSITE_ADDRESS =~ ^((http|https):\/\/)?[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/\S*)?$ ]]; then
         echo "Invalid web address. Please enter a valid FQDN or IPv4 address (e.g., http://example.com or http://192.168.1.100)."
         exit 1
     else
-        # If the input is a valid FQDN, set FQDN to the entered value
-        FQDN="$WEBSITE_ADDRESS"
+        echo "Invalid web address. Please enter a valid FQDN or IPv4 address (e.g., http://example.com or http://192.168.1.100)."
+        exit 1
     fi
 fi
+
+
 
 # Step 1 LAMP server installaton
 #Update the system and install git, Apache, PHP and modules required by Moodle
@@ -72,17 +79,37 @@ sudo git checkout -t origin/MOODLE_401_STABLE
 echo "Step 4 has completed."
 
 
+# Create a Moodle Virtual Host File
+# Strip the 'http://' or 'https://' part from the web address
+FQDN_ADDRESS=$(echo "$WEBSITE_ADDRESS" | sed -e 's#^https\?://##')
+# Create a new moodle.conf file
+cat << EOF | sudo tee /etc/apache2/sites-available/moodle.conf
+<VirtualHost *:80>
+    ServerAdmin webmaster@localhost
+    DocumentRoot /var/www/moodle
+    ServerName "$FQDN_ADDRESS"
+    ServerAlias "www.$FQDN_ADDRESS"
+
+    ErrorLog \${APACHE_LOG_DIR}/error.log
+    CustomLog \${APACHE_LOG_DIR}/access.log combined
+</VirtualHost>
+EOF
+sudo a2dissite 000-default.conf
+sudo a2ensite moodle.conf
+if [ "$FQDN" = "y" ]; then
+	sudo apt install certbot python3-certbot-apache
+	sudo ufw allow 'Apache Full'
+	sudo ufw delete allow 'Apache'
+	sudo certbot --apache
+fi
+systemctl reload apache2
+
+
 # Step 5 Directories, ownership, permissions and php.ini required by 
 sudo mkdir -p /var/www/moodledata
 sudo chown -R www-data /var/www/moodledata
 sudo chmod -R 777 /var/www/moodledata
 sudo chmod -R 755 /var/www/moodle
-# Change the Apache DocumentRoot using sed so Moodle opens at http://webaddress
-sudo cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/moodle.conf
-sudo sed -i 's|/var/www/html|/var/www/moodle|g' /etc/apache2/sites-available/moodle.conf
-sudo a2dissite 000-default.conf
-sudo a2ensite moodle.conf
-systemctl reload apache2
 # Update the php.ini files, required to pass Moodle install check
 sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' /etc/php/7.4/apache2/php.ini
 sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' /etc/php/7.4/cli/php.ini
