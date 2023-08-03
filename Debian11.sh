@@ -88,6 +88,10 @@ cat << EOF | sudo tee /etc/apache2/sites-available/moodle.conf
     DocumentRoot /var/www/moodle
     ServerName "$FQDN_ADDRESS"
     ServerAlias "www.$FQDN_ADDRESS"
+    RewriteEngine On
+	RewriteCond %{HTTPS} off
+	RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
 
     ErrorLog \${APACHE_LOG_DIR}/error.log
     CustomLog \${APACHE_LOG_DIR}/access.log combined
@@ -100,6 +104,11 @@ if [ "$FQDN" = "y" ]; then
 	sudo ufw allow 'Apache Full'
 	sudo ufw delete allow 'Apache'
 	sudo certbot --apache
+	
+	 # Adjust http to https in WEBSITE_ADDRESS if necessary
+    if [[ ! "$FQDN_ADDRESS" == https://* ]]; then
+        WEBSITE_ADDRESS="https://${FQDN_ADDRESS#http://}"
+	
 fi
 systemctl reload apache2
 
