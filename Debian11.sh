@@ -87,10 +87,6 @@ cat << EOF | sudo tee /etc/apache2/sites-available/moodle.conf
     DocumentRoot /var/www/moodle
     ServerName "$FQDN_ADDRESS"
     ServerAlias "www.$FQDN_ADDRESS"
-    RewriteEngine On
-	RewriteCond %{HTTPS} off
-	RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
-
 
     ErrorLog \${APACHE_LOG_DIR}/error.log
     CustomLog \${APACHE_LOG_DIR}/access.log combined
@@ -101,7 +97,7 @@ sudo a2ensite moodle.conf
 if [ "$FQDN" = "y" ]; then
     if [ ! -d "/etc/letsencrypt" ]; then
         echo "Setting up SSL Certificates for your website"
-        sudo apt install -y certbot python3-certbot-apache
+        sudo apt install certbot python3-certbot-apache
         sudo ufw allow 'Apache Full'
         sudo ufw delete allow 'Apache'
         sudo certbot --apache
