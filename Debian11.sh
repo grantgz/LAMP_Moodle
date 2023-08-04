@@ -77,8 +77,7 @@ cd moodle
 sudo git checkout -t origin/MOODLE_401_STABLE
 echo "Step 4 has completed."
 
-
-# Create a Moodle Virtual Host File
+# Step 5  Create a Moodle Virtual Host File and call certbot for https encryption
 # Strip the 'http://' or 'https://' part from the web address
 FQDN_ADDRESS=$(echo "$WEBSITE_ADDRESS" | sed -e 's#^https\?://##')
 # Create a new moodle.conf file
@@ -100,20 +99,20 @@ EOF
 sudo a2dissite 000-default.conf
 sudo a2ensite moodle.conf
 if [ "$FQDN" = "y" ]; then
-	sudo apt install certbot python3-certbot-apache
-	sudo ufw allow 'Apache Full'
-	sudo ufw delete allow 'Apache'
-	sudo certbot --apache
-	
-	 # Adjust http to https in WEBSITE_ADDRESS if necessary
-    if [[ ! "$FQDN_ADDRESS" == https://* ]]; then
+    if [ ! -d "/etc/letsencrypt" ]; then
+        echo "Setting up SSL Certificates for your website"
+        sudo apt install -y certbot python3-certbot-apache
+        sudo ufw allow 'Apache Full'
+        sudo ufw delete allow 'Apache'
+        sudo certbot --apache
         WEBSITE_ADDRESS="https://${FQDN_ADDRESS#http://}"
-	
+    fi
 fi
 systemctl reload apache2
+echo "Step 5 has completed."
 
 
-# Step 5 Directories, ownership, permissions and php.ini required by 
+# Step 6 Directories, ownership, permissions and php.ini required by 
 sudo mkdir -p /var/www/moodledata
 sudo chown -R www-data /var/www/moodledata
 sudo chmod -R 777 /var/www/moodledata
@@ -130,17 +129,17 @@ cd /var/www/moodle/local
 sudo wget https://moodle.org/plugins/download.php/28045/local_adminer_moodle42_2021051702.zip
 sudo unzip local_adminer_moodle42_2021051702.zip
 sudo rm local_adminer_moodle42_2021051702.zip 
-echo "Step 5 has completed."
+echo "Step 6 has completed."
 
-# Step 6 Set up cron job to run every minute 
+# Step 7 Set up cron job to run every minute 
 echo "Cron job added for the www-data user."
 CRON_JOB="* * * * * /var/www/moodle/admin/cli/cron.php >/dev/null"
 echo "$CRON_JOB" > /tmp/moodle_cron
 sudo crontab -u www-data /tmp/moodle_cron
 sudo rm /tmp/moodle_cron
-echo "Step 6 has completed."
+echo "Step 7 has completed."
 
-# Step 7 Secure the MySQL service and create the database and user for Moodle
+# Step 8 Secure the MySQL service and create the database and user for Moodle
 MYSQL_ROOT_PASSWORD=$(openssl rand -base64 6)
 MYSQL_MOODLEUSER_PASSWORD=$(openssl rand -base64 6)
 MOODLE_ADMIN_PASSWORD=$(openssl rand -base64 6)
@@ -168,9 +167,9 @@ sudo bash -c "echo 'Moodle Site Password for admin: $MOODLE_ADMIN_PASSWORD' >> /
 cat /etc/moodle_installation/info.txt
 
 
-echo "Step 7 has completed."
+echo "Step 8 has completed."
 
-#Step 8 Finish the install 
+#Step 9 Finish the install 
 echo "The script will now try to finish the installation. If this fails, log on to your site at $WEBSITE_ADDRESS and follow the prompts."
 INSTALL_COMMAND="sudo -u www-data /usr/bin/php /var/www/moodle/admin/cli/install.php \
     --non-interactive \
@@ -200,7 +199,7 @@ else
 fi
 # Display the generated passwords (if needed, for reference)
 sudo cat /etc/moodle_installation/info.txt
-#Step 8 has finished"
+#Step 9 has finished"
 
 
 
