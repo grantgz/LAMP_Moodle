@@ -75,6 +75,8 @@ cd /var/www
 sudo git clone https://github.com/moodle/moodle.git
 cd moodle
 sudo git checkout -t origin/MOODLE_401_STABLE
+ORIG_MOODLE401_COMMIT=$(git rev-parse HEAD)
+LAST_COMMIT=$ORIG_MOODLE401_COMMIT
 echo "Step 4 has completed."
 
 # Step 5  Create a Moodle Virtual Host File and call certbot for https encryption
