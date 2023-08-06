@@ -170,7 +170,7 @@ echo "Step 7 has completed."
 UPDATE_SCRIPT_URL="https://github.com/steerpike5/LAMP_Moodle/raw/FQDN/security_update.sh"
 # Directory where the update script will be placed
 # Download the update script and place it in the /opt directory
-wget -O "/opt/security_update" "$UPDATE_SCRIPT_URL"
+wget -O "/opt/security_update.sh" "$UPDATE_SCRIPT_URL"
 # Add execute permissions to the update script
 chmod +x "/opt/security_update.sh"
 # Add a cron job to run the update script nightly
