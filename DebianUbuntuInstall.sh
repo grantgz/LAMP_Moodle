@@ -19,19 +19,18 @@ if [ -n "$WEBSITE_ADDRESS" ]; then
 fi
 
 
-
-# Step 1 LAMP server installaton
-#Update the system and install git, Apache, PHP and modules required by Moodle
+#Step 1 Update the system and install git, Apache, PHP and modules required by Moodle
 sudo apt-get update
 sudo apt upgrade -y
-sudo apt-get install -y apache2 php7.4 libapache2-mod-php7.4 php7.4-mysql graphviz aspell git 
-sudo apt-get install -y clamav php7.4-pspell php7.4-curl php7.4-gd php7.4-intl php7.4-mysql ghostscript
-sudo apt-get install -y php7.4-xml php7.4-xmlrpc php7.4-ldap php7.4-zip php7.4-soap php7.4-mbstring
+sudo apt-get install -y apache2 php libapache2-mod-php php-mysql graphviz aspell git 
+sudo apt-get install -y clamav php-pspell php-curl php-gd php-intl php-mysql ghostscript
+sudo apt-get install -y php-xml php-xmlrpc php-ldap php-zip php-soap php-mbstring
 sudo apt-get install -y  ufw unzip
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y unattended-upgrades
 #Install Debian default database MariaDB 
 sudo apt-get install -y mariadb-server mariadb-client
 echo "Step 1 has completed."
+
 
 # Step 2 Set up the firewall
 sudo ufw --force enable
@@ -68,16 +67,45 @@ sudo systemctl restart unattended-upgrades
 echo "Step 3 has completed."
 
 # Step 4 Clone the Moodle repository into /var/www
-# Use MOODLE_401_STABLE branch as Debian 11 ships with php7.4
+PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
+# Set MoodleVersion based on PHP version
+if [ "$php_version" = "7.4" ]; then
+    MoodleVersion="MOODLE_401_STABLE"
+elif [ "$(php -r "echo version_compare('$php_version', '8.0.0');")" -ge 0 ]; then
+    MoodleVersion="MOODLE_402_STABLE"
+else
+    echo "Unsupported PHP version: $php_version"
+    exit 1
+fi
+echo "Installing $MoodleVersion based on your php version $php_version"
 echo "Cloning Moodle repository into /opt and copying to /var/www/"
 echo "Be patient, this can take several minutes."
 cd /var/www
 sudo git clone https://github.com/moodle/moodle.git
 cd moodle
-sudo git checkout -t origin/MOODLE_401_STABLE
-ORIG_MOODLE401_COMMIT=$(git rev-parse HEAD)
-LAST_COMMIT=$ORIG_MOODLE401_COMMIT
+sudo git checkout -t origin/$MoodleVersion
+git config pull.ff only
+ORIG_COMMIT=$(git rev-parse HEAD)
+LAST_COMMIT=$ORIG_COMMIT
 echo "Step 4 has completed."
+
+# Step 5a  Create a user to run backups
+# Generate a random password for backupuser
+backupuserPW=$(openssl rand -base64 12)
+sudo useradd -m -d "/home/backupuser" -s "/bin/bash" "backupuser"
+echo "backupuser:$backupuserPW" | sudo chpasswd
+sudo usermod -aG mysql "backupuser"
+# Create and set permissions for .my.cnf
+backupuser_home="/home/backupuser"
+mycnf_file="$backupuser_home/.my.cnf"
+# Create .my.cnf file with correct permissions
+echo "[mysqldump]" | sudo tee "$mycnf_file" > /dev/null
+echo "user=backupuser" | sudo tee -a "$mycnf_file" > /dev/null
+echo "password=$backupuserPW" | sudo tee -a "$mycnf_file" > /dev/null
+sudo chmod 600 "$mycnf_file"
+sudo chown backupuser:backupuser "$mycnf_file"
+# Securely erase the password from memory
+
 
 # Step 5  Create a Moodle Virtual Host File and call certbot for https encryption
 # Strip the 'http://' or 'https://' part from the web address
@@ -116,10 +144,10 @@ sudo chown -R www-data /var/www/moodledata
 sudo chmod -R 777 /var/www/moodledata
 sudo chmod -R 755 /var/www/moodle
 # Update the php.ini files, required to pass Moodle install check
-sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' /etc/php/7.4/apache2/php.ini
-sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' /etc/php/7.4/cli/php.ini
-sudo sed -i 's/.*post_max_size =.*/post_max_size = 80M/' /etc/php/7.4/apache2/php.ini
-sudo sed -i 's/.*upload_max_filesize =.*/upload_max_filesize = 80M/' /etc/php/7.4/apache2/php.ini
+sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' /etc/php/$PHP_VERSION/apache2/php.ini
+sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' /etc/php/$PHP_VERSION/cli/php.ini
+sudo sed -i 's/.*post_max_size =.*/post_max_size = 80M/' /etc/php/$PHP_VERSION/apache2/php.ini
+sudo sed -i 's/.*upload_max_filesize =.*/upload_max_filesize = 80M/' /etc/php/$PHP_VERSION/apache2/php.ini
 # Restart Apache to allow changes to take place
 sudo service apache2 restart
 # Install adminer, phpmyadmin alternative
@@ -136,6 +164,46 @@ echo "$CRON_JOB" > /tmp/moodle_cron
 sudo crontab -u www-data /tmp/moodle_cron
 sudo rm /tmp/moodle_cron
 echo "Step 7 has completed."
+
+# Step 8 Set up a cron job to keep 401 up to date
+# Set the URL of the update script in your repository
+UPDATE_SCRIPT_URL="https://github.com/steerpike5/LAMP_Moodle/raw/FQDN/moodle_update.sh"
+# Directory where the update script will be placed
+OPT_DIR="/opt"
+# Download the update script and place it in the /opt directory
+wget -O "$OPT_DIR/moodle_upgrade.sh" "$UPDATE_SCRIPT_URL"
+# Add execute permissions to the update script
+chmod +x "$OPT_DIR/moodle_upgrade.sh"
+# Add a cron job to run the update script nightly
+CRON_JOB="0 0 * * * $OPT_DIR/moodle_upgrade.sh"
+# Add the cron job to the user's crontab
+(crontab -l ; echo "$CRON_JOB") | crontab 
+# Step 8 Finished
+
+
+#  Step 9 Generate a random password for backupuser
+backupuserPW=$(openssl rand -base64 12)
+# Create backupuser
+sudo useradd -m -d "/home/backupuser" -s "/bin/bash" "backupuser"
+# Set password for backupuser
+echo "backupuser:$backupuserPW" | sudo chpasswd
+# Add backupuser to the mysql group
+sudo usermod -aG mysql "backupuser"
+# Create and set permissions for .my.cnf
+backupuser_home="/home/backupuser"
+mycnf_file="$backupuser_home/.my.cnf"
+# Create .my.cnf file with correct permissions
+echo "[mysqldump]" | sudo tee "$mycnf_file" > /dev/null
+echo "user=backupuser" | sudo tee -a "$mycnf_file" > /dev/null
+echo "password=$backupuserPW" | sudo tee -a "$mycnf_file" > /dev/null
+sudo chmod 600 "$mycnf_file"
+sudo chown backupuser:backupuser "$mycnf_file"
+# Securely erase the password from memory
+unset backupuserPW
+# Step9 Finished
+
+
+
 
 # Step 8 Secure the MySQL service and create the database and user for Moodle
 MYSQL_ROOT_PASSWORD=$(openssl rand -base64 6)
