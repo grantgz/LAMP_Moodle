@@ -197,6 +197,7 @@ echo "password=$backupuserPW" | sudo tee -a "$mycnf_file" > /dev/null
 sudo chmod 600 "$mycnf_file"
 sudo chown backupuser:backupuser "$mycnf_file"
 # Securely erase the password from memory
+sudo unset backupuserPW
 echo "Step 9 backupuser finished"
 # Step9 Finished
 
