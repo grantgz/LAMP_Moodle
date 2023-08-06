@@ -9,9 +9,8 @@ if [ -n "$WEBSITE_ADDRESS" ]; then
     if [[ $WEBSITE_ADDRESS =~ ^((http|https):\/\/)?[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/\S*)?$ ]]; then
         # If the input is a valid FQDN, set FQDN to the entered value
         FQDN="y"
-    elif [[ $WEBSITE_ADDRESS =~ ^((http|https):\/\/)?[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/\S*)?$ ]]; then
-        echo "Invalid web address. Please enter a valid FQDN or IPv4 address (e.g., http://example.com or http://192.168.1.100)."
-        exit 1
+    elif [[ $WEBSITE_ADDRESS =~ ^((http|https):\/\/)?([0-9]{1,3}\.){3}[0-9]{1,3}(\/\S*)?$ ]]; then
+        FQDN="n"
     else
         echo "Invalid web address. Please enter a valid FQDN or IPv4 address (e.g., http://example.com or http://192.168.1.100)."
         exit 1
@@ -71,7 +70,7 @@ PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
 # Set MoodleVersion based on PHP version
 if [ "$php_version" = "7.4" ]; then
     MoodleVersion="MOODLE_401_STABLE"
-elif [ "$(php -r "echo version_compare('$php_version', '8.0.0');")" -ge 0 ]; then
+elif [ "$(php -r "echo version_compare('$php_version', '8.1');")" -ge 0 ]; then
     MoodleVersion="MOODLE_402_STABLE"
 else
     echo "Unsupported PHP version: $php_version"
