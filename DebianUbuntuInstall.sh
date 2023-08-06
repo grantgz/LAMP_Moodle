@@ -66,7 +66,7 @@ sudo systemctl restart unattended-upgrades
 echo "Step 3 has completed."
 
 # Step 4 Clone the Moodle repository into /var/www
-PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
+php_version=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
 # Set MoodleVersion based on PHP version
 if [ "$php_version" = "7.4" ]; then
     MoodleVersion="MOODLE_401_STABLE"
