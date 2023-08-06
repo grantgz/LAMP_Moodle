@@ -166,15 +166,14 @@ echo "Step 7 has completed."
 
 # Step 8 Set up a cron job to keep 401 up to date
 # Set the URL of the update script in your repository
-UPDATE_SCRIPT_URL="https://github.com/steerpike5/LAMP_Moodle/raw/FQDN/moodle_update.sh"
+UPDATE_SCRIPT_URL="https://github.com/steerpike5/LAMP_Moodle/raw/FQDN/security_update.sh"
 # Directory where the update script will be placed
-OPT_DIR="/opt"
 # Download the update script and place it in the /opt directory
-wget -O "$OPT_DIR/moodle_upgrade.sh" "$UPDATE_SCRIPT_URL"
+wget -O "/opt/security_update" "$UPDATE_SCRIPT_URL"
 # Add execute permissions to the update script
-chmod +x "$OPT_DIR/moodle_upgrade.sh"
+chmod +x "/opt/security_update.sh"
 # Add a cron job to run the update script nightly
-CRON_JOB="0 0 * * * $OPT_DIR/moodle_upgrade.sh"
+CRON_JOB="0 0 * * * /opt/security_update.sh"
 # Add the cron job to the user's crontab
 (crontab -l ; echo "$CRON_JOB") | crontab 
 # Step 8 Finished
@@ -198,13 +197,12 @@ echo "password=$backupuserPW" | sudo tee -a "$mycnf_file" > /dev/null
 sudo chmod 600 "$mycnf_file"
 sudo chown backupuser:backupuser "$mycnf_file"
 # Securely erase the password from memory
-unset backupuserPW
+echo "Step 9 backupuser finished"
 # Step9 Finished
 
 
 
-
-# Step 8 Secure the MySQL service and create the database and user for Moodle
+# Step 10 Secure the MySQL service and create the database and user for Moodle
 MYSQL_ROOT_PASSWORD=$(openssl rand -base64 6)
 MYSQL_MOODLEUSER_PASSWORD=$(openssl rand -base64 6)
 MOODLE_ADMIN_PASSWORD=$(openssl rand -base64 6)
@@ -232,7 +230,7 @@ sudo bash -c "echo 'Moodle Site Password for admin: $MOODLE_ADMIN_PASSWORD' >> /
 cat /etc/moodle_installation/info.txt
 
 
-echo "Step 8 has completed."
+echo "Step 10 has completed."
 
 #Step 9 Finish the install 
 echo "The script will now try to finish the installation. If this fails, log on to your site at $WEBSITE_ADDRESS and follow the prompts."
