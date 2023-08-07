@@ -24,15 +24,26 @@ sudo apt-get update
 if [ $? -ne 0 ]; then
     echo "apt-get update failed, switching to yum update on CentOS..."
     
-	# Install required packages
-	sudo yum install -y httpd php php-mysqlnd graphviz aspell git \
-	clamav  php-curl php-gd php-intl  ghostscript 	unzip\
-	php-xml php-ldap php-zip php-soap php-mbstring 
-	# Install unattended-upgrades
-	#sudo yum install -y yum-cron
-	# Install CentOS default database MariaDB
-	sudo yum install -y mariadb-server mariadb
-	# Install Certbot and Apache plugin
+	## Install required packages
+	#sudo yum install -y httpd php php-mysqlnd graphviz aspell git \
+	#clamav  php-curl php-gd php-intl  ghostscript 	unzip\
+	#php-xml php-ldap php-zip php-soap php-mbstring 
+	## Install unattended-upgrades
+	##sudo yum install -y yum-cron
+	## Install CentOS default database MariaDB
+	#sudo yum install -y mariadb-server mariadb
+	## Install Certbot and Apache plugin
+	#sudo yum install -y certbot python3-certbot-apache
+	
+	sudo yum update -y
+	sudo yum install -y epel-release
+	sudo yum install -y httpd php php-mysqlnd php-gd php-intl php-xml php-ldap php-zip php-soap php-mbstring clamav git unzip
+	sudo systemctl start httpd
+	sudo systemctl enable httpd
+	sudo yum install -y mariadb-server
+	sudo systemctl start mariadb
+	sudo systemctl enable mariadb
+	sudo dnf install firewalld
 	sudo yum install -y certbot python3-certbot-apache
 	WEB_SERVER_USER="apache"
     
@@ -166,6 +177,7 @@ sudo chown backupuser:backupuser "$mycnf_file"
 # Strip the 'http://' or 'https://' part from the web address
 FQDN_ADDRESS=$(echo "$WEBSITE_ADDRESS" | sed -e 's#^https\?://##')
 # Create a new moodle.conf file
+if [[ "$DEBIAN" == "y" ]]; then
 cat << EOF | sudo tee /etc/apache2/sites-available/moodle.conf
 <VirtualHost *:80>
     ServerAdmin webmaster@localhost
@@ -179,6 +191,24 @@ cat << EOF | sudo tee /etc/apache2/sites-available/moodle.conf
 EOF
 sudo a2dissite 000-default.conf
 sudo a2ensite moodle.conf
+else
+sudo tee /etc/httpd/conf.d/moodle.conf << EOF
+<VirtualHost *:80>
+    ServerAdmin webmaster@your_moodle_domain
+    DocumentRoot /var/www/moodle
+
+    <Directory /var/www/moodle>
+        Options FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    CustomLog /var/log/httpd/access.log combined
+    ErrorLog /var/log/httpd/error.log
+</VirtualHost>
+EOF
+sudo systemctl restart httpd
+fi
 if [ "$FQDN" = "y" ]; then
     if [ ! -d "/etc/letsencrypt" ]; then
         echo "Setting up SSL Certificates for your website"
