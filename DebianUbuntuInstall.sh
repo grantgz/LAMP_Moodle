@@ -24,18 +24,17 @@ sudo apt-get update
 if [ $? -ne 0 ]; then
     echo "apt-get update failed, switching to yum update on CentOS..."
     
-    # Install required packages
-	sudo yum install -y httpd php php-mysql graphviz aspell git \
-    clamav php-pspell php-curl php-gd php-intl php-mysql ghostscript \
-    php-xml php-xmlrpc php-ldap php-zip php-soap php-mbstring \
-    ufw unzip
+	# Install required packages
+	sudo yum install -y httpd php php-mysqlnd graphviz aspell git \
+	clamav  php-curl php-gd php-intl  ghostscript 	unzip\
+	php-xml php-ldap php-zip php-soap php-mbstring 
 	# Install unattended-upgrades
-	sudo yum install -y yum-cron
+	#sudo yum install -y yum-cron
 	# Install CentOS default database MariaDB
 	sudo yum install -y mariadb-server mariadb
 	# Install Certbot and Apache plugin
 	sudo yum install -y certbot python3-certbot-apache
-    WEB_SERVER_USER="apache"
+	WEB_SERVER_USER="apache"
     
     
     # Run yum update on CentOS
@@ -69,6 +68,7 @@ if [ $? -ne 0 ]; then
 	##Redhat Version
 		
 else
+	DEBIAN="y"
     echo "apt-get update succeeded."
     #Step 1 Update the system and install git, Apache, PHP and modules required by Moodle
 	sudo apt-get update
@@ -194,17 +194,26 @@ echo "Step 5 has completed."
 
 # Step 6 Directories, ownership, permissions and php.ini required by 
 sudo mkdir -p /var/www/moodledata
-sudo chown -R WEB_SERVER_USER /var/www/moodledata
+sudo chown -R $WEB_SERVER_USER /var/www/moodledata
 sudo chmod -R 777 /var/www/moodledata
 sudo chmod -R 755 /var/www/moodle
+if [[ "$DEBIAN" == "y" ]]; then
+    PHP_CONFIG_DIR="/etc/php/$PHP_VERSION/apache2"
+else
+	PHP_CONFIG_DIR="/etc"
+fi 
+# Determine PHP version
 PHP_VERSION=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
-# Update the php.ini files, required to pass Moodle install check
-sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' /etc/php/$PHP_VERSION/apache2/php.ini
-sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' /etc/php/$PHP_VERSION/cli/php.ini
-sudo sed -i 's/.*post_max_size =.*/post_max_size = 80M/' /etc/php/$PHP_VERSION/apache2/php.ini
-sudo sed -i 's/.*upload_max_filesize =.*/upload_max_filesize = 80M/' /etc/php/$PHP_VERSION/apache2/php.ini
-# Restart Apache to allow changes to take place
-sudo service apache2 restart
+# Update PHP configuration
+sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' "$PHP_CONFIG_DIR/php.ini"
+sudo sed -i 's/.*post_max_size =.*/post_max_size = 80M/' "$PHP_CONFIG_DIR/php.ini"
+sudo sed -i 's/.*upload_max_filesize =.*/upload_max_filesize = 80M/' "$PHP_CONFIG_DIR/php.ini"
+# Restart the web server based on distribution
+if [[ "$DEBIAN" == "y" ]]; then
+    sudo service apache2 restart
+else
+    sudo systemctl restart httpd.service
+fi
 # Install adminer, phpmyadmin alternative
 cd /var/www/moodle/local 
 sudo wget https://moodle.org/plugins/download.php/28045/local_adminer_moodle42_2021051702.zip
@@ -216,7 +225,7 @@ echo "Step 6 has completed."
 echo "Cron job added for the WEB_SERVER_USER user."
 CRON_JOB="* * * * * /var/www/moodle/admin/cli/cron.php >/dev/null"
 echo "$CRON_JOB" > /tmp/moodle_cron
-sudo crontab -u WEB_SERVER_USER /tmp/moodle_cron
+sudo crontab -u $WEB_SERVER_USER /tmp/moodle_cron
 sudo rm /tmp/moodle_cron
 echo "Step 7 has completed."
 
