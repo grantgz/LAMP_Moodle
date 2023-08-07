@@ -17,38 +17,91 @@ if [ -n "$WEBSITE_ADDRESS" ]; then
     fi
 fi
 
-
-#Step 1 Update the system and install git, Apache, PHP and modules required by Moodle
+# Attempt to update using apt-get
 sudo apt-get update
-sudo apt upgrade -y
-sudo apt-get install -y apache2 php libapache2-mod-php php-mysql graphviz aspell git 
-sudo apt-get install -y clamav php-pspell php-curl php-gd php-intl php-mysql ghostscript
-sudo apt-get install -y php-xml php-xmlrpc php-ldap php-zip php-soap php-mbstring
-sudo apt-get install -y  ufw unzip
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -y unattended-upgrades
-#Install Debian default database MariaDB 
-sudo apt-get install -y mariadb-server mariadb-client
-echo "Step 1 has completed."
+
+# Check the exit status of apt-get
+if [ $? -ne 0 ]; then
+    echo "apt-get update failed, switching to yum update on CentOS..."
+    
+    # Install required packages
+	sudo yum install -y httpd php php-mysql graphviz aspell git \
+    clamav php-pspell php-curl php-gd php-intl php-mysql ghostscript \
+    php-xml php-xmlrpc php-ldap php-zip php-soap php-mbstring \
+    ufw unzip
+	# Install unattended-upgrades
+	sudo yum install -y yum-cron
+	# Install CentOS default database MariaDB
+	sudo yum install -y mariadb-server mariadb
+	# Install Certbot and Apache plugin
+	sudo yum install -y certbot python3-certbot-apache
+    WEB_SERVER_USER="apache"
+    
+    
+    # Run yum update on CentOS
+	# Install firewalld if not already installed
+	sudo dnf install firewalld   # Use 'yum' instead of 'dnf' on CentOS 7
+	# Start and enable the firewalld service
+	sudo systemctl start firewalld
+	sudo systemctl enable firewalld
+	# Set default policies to deny incoming and allow outgoing traffic
+	sudo firewall-cmd --set-default-zone=drop
+	sudo firewall-cmd --set-default-zone=public   # For CentOS 7
+	# Allow SSH (port 22) for remote access
+	# Allow HTTP (port 80) and HTTPS (port 443) for web server
+	# Allow MySQL (port 3306) for database access
+	sudo firewall-cmd --add-service=ssh --permanent
+	sudo firewall-cmd --add-service=http --add-service=https --permanent
+	sudo firewall-cmd --add-service=mysql --permanent
+	# Reload the firewall settings
+	sudo firewall-cmd --reload
 
 
-# Step 2 Set up the firewall
-sudo ufw --force enable
-# Set default policies to deny incoming and allow outgoing traffic
-sudo ufw default deny incoming
-sudo ufw default allow outgoing
-# Allow SSH (port 22) for remote access
-# Allow HTTP (port 80) and HTTPS (port 443) for web server 
-# Allow MySQL (port 3306) for database access
-sudo ufw allow ssh
-sudo ufw allow 80
-sudo ufw allow 443
-sudo ufw allow 3306
-sudo ufw reload
-echo "Step 2 has completed."
+	# Daily security updates RedHat
+	sudo yum install yum-cron   # Use 'dnf' instead of 'yum' on CentOS 8
+	sudo systemctl start yum-cron
+	sudo systemctl enable yum-cron
+	sudo sed -i -e 's/^update_cmd = .*/update_cmd = security/' \
+		-e 's/^update_messages = .*/update_messages = yes/' \
+		-e 's/^download_updates = .*/download_updates = yes/' \
+		-e 's/^apply_updates = .*/apply_updates = yes/' /etc/yum/yum-cron.conf
+	sudo systemctl restart yum-cron
+	##Redhat Version
+		
+else
+    echo "apt-get update succeeded."
+    #Step 1 Update the system and install git, Apache, PHP and modules required by Moodle
+	sudo apt-get update
+	sudo apt upgrade -y
+	sudo apt-get install -y apache2 php libapache2-mod-php php-mysql graphviz aspell git 
+	sudo apt-get install -y clamav php-pspell php-curl php-gd php-intl php-mysql ghostscript
+	sudo apt-get install -y php-xml php-xmlrpc php-ldap php-zip php-soap php-mbstring
+	sudo apt-get install -y  ufw unzip
+	sudo DEBIAN_FRONTEND=noninteractive apt-get install -y unattended-upgrades
+	#Install Debian default database MariaDB 
+	sudo apt-get install -y mariadb-server mariadb-client
+	sudo apt install certbot python3-certbot-apache
+	WEB_SERVER_USER="www-data"
+	echo "Step 1 has completed."
 
 
-#Step 3 Set up daily security updates
-# Configure unattended-upgrades
+	# Step 2 Set up the firewall
+	sudo ufw --force enable
+	# Set default policies to deny incoming and allow outgoing traffic
+	sudo ufw default deny incoming
+	sudo ufw default allow outgoing
+	# Allow SSH (port 22) for remote access
+	# Allow HTTP (port 80) and HTTPS (port 443) for web server 
+	# Allow MySQL (port 3306) for database access
+	sudo ufw allow ssh
+	sudo ufw allow 80
+	sudo ufw allow 443
+	sudo ufw allow 3306
+	sudo ufw reload
+	echo "Step 2 has completed."
+
+## Changing tabs confuses Geany
+	-# Configure unattended-upgrades
 sudo tee /etc/apt/apt.conf.d/50unattended-upgrades <<EOF
 Unattended-Upgrade::Allowed-Origins {
     "\${distro_id}:\${distro_codename}";
@@ -61,9 +114,12 @@ sudo tee /etc/apt/apt.conf.d/20auto-upgrades <<EOF
 APT::Periodic::Update-Package-Lists "1";
 APT::Periodic::Unattended-Upgrade "1";
 EOF
-# Restart the unattended-upgrades service
-sudo systemctl restart unattended-upgrades
-echo "Step 3 has completed."
+	# Restart the unattended-upgrades service
+	sudo systemctl restart unattended-upgrades
+	echo "Step 3 has completed."
+   
+fi
+ 
 
 # Step 4 Clone the Moodle repository into /var/www
 php_version=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
@@ -126,7 +182,6 @@ sudo a2ensite moodle.conf
 if [ "$FQDN" = "y" ]; then
     if [ ! -d "/etc/letsencrypt" ]; then
         echo "Setting up SSL Certificates for your website"
-        sudo apt install certbot python3-certbot-apache
         sudo ufw allow 'Apache Full'
         sudo ufw delete allow 'Apache'
         sudo certbot --apache
@@ -139,7 +194,7 @@ echo "Step 5 has completed."
 
 # Step 6 Directories, ownership, permissions and php.ini required by 
 sudo mkdir -p /var/www/moodledata
-sudo chown -R www-data /var/www/moodledata
+sudo chown -R WEB_SERVER_USER /var/www/moodledata
 sudo chmod -R 777 /var/www/moodledata
 sudo chmod -R 755 /var/www/moodle
 PHP_VERSION=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
@@ -158,10 +213,10 @@ sudo rm local_adminer_moodle42_2021051702.zip
 echo "Step 6 has completed."
 
 # Step 7 Set up cron job to run every minute 
-echo "Cron job added for the www-data user."
+echo "Cron job added for the WEB_SERVER_USER user."
 CRON_JOB="* * * * * /var/www/moodle/admin/cli/cron.php >/dev/null"
 echo "$CRON_JOB" > /tmp/moodle_cron
-sudo crontab -u www-data /tmp/moodle_cron
+sudo crontab -u WEB_SERVER_USER /tmp/moodle_cron
 sudo rm /tmp/moodle_cron
 echo "Step 7 has completed."
 
@@ -236,7 +291,7 @@ echo "Step 10 has completed."
 
 #Step 9 Finish the install 
 echo "The script will now try to finish the installation. If this fails, log on to your site at $WEBSITE_ADDRESS and follow the prompts."
-INSTALL_COMMAND="sudo -u www-data /usr/bin/php /var/www/moodle/admin/cli/install.php \
+INSTALL_COMMAND="sudo -u $WEB_SERVER_USER /usr/bin/php /var/www/moodle/admin/cli/install.php \
     --non-interactive \
     --lang=en \
     --wwwroot=\"$WEBSITE_ADDRESS\" \
