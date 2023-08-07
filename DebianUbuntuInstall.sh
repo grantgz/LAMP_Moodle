@@ -133,16 +133,17 @@ fi
  
 
 # Step 4 Clone the Moodle repository into /var/www
-php_version=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
-# Set MoodleVersion based on PHP version
-if [ "$php_version" = "7.4" ]; then
-    MoodleVersion="MOODLE_401_STABLE"
-elif [ "$(php -r "echo version_compare('$php_version', '8.1');")" -ge 0 ]; then
+# Get PHP and MariaDB version version
+php_version=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
+mariadb_version=$(mysql -u root -e "SELECT VERSION();" | awk '{print $2}')
+
+# Check if PHP version is >= 8.0 and MariaDB version is >= 10.6.7
+if [ "$(php -r "echo version_compare('$php_version', '8.0');")" -ge 0 ] && [ "$(php -r "echo version_compare('$mariadb_version', '10.6.7');")" -ge 0 ]; then
     MoodleVersion="MOODLE_402_STABLE"
 else
-    echo "Unsupported PHP version: $php_version"
-    exit 1
+    MoodleVersion="MOODLE_401_STABLE"
 fi
+
 echo "Installing $MoodleVersion based on your php version $php_version"
 echo "Cloning Moodle repository into /opt and copying to /var/www/"
 echo "Be patient, this can take several minutes."
