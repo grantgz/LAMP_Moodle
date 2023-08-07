@@ -25,19 +25,9 @@ if [ $? -ne 0 ]; then
     echo "apt-get update failed, switching to yum update on CentOS..."
     
 	## Install required packages
-	#sudo yum install -y httpd php php-mysqlnd graphviz aspell git \
-	#clamav  php-curl php-gd php-intl  ghostscript 	unzip\
-	#php-xml php-ldap php-zip php-soap php-mbstring 
-	## Install unattended-upgrades
-	##sudo yum install -y yum-cron
-	## Install CentOS default database MariaDB
-	#sudo yum install -y mariadb-server mariadb
-	## Install Certbot and Apache plugin
-	#sudo yum install -y certbot python3-certbot-apache
-	
 	sudo yum update -y
 	sudo yum install -y epel-release
-	sudo yum install -y httpd php php-mysqlnd php-gd php-intl php-xml php-ldap php-zip php-soap php-mbstring clamav git unzip
+	sudo yum install -y httpd php php-mysqlnd php-gd php-intl php-xml php-ldap php-zip php-soap php-mbstring php-sodium clamav git unzip
 	sudo systemctl start httpd
 	sudo systemctl enable httpd
 	sudo yum install -y mariadb-server
@@ -76,8 +66,7 @@ if [ $? -ne 0 ]; then
 		-e 's/^download_updates = .*/download_updates = yes/' \
 		-e 's/^apply_updates = .*/apply_updates = yes/' /etc/yum/yum-cron.conf
 	sudo systemctl restart yum-cron
-	##Redhat Version
-		
+	##Redhat Version	
 else
 	DEBIAN="y"
     echo "apt-get update succeeded."
@@ -228,13 +217,13 @@ sudo mkdir -p /var/www/moodledata
 sudo chown -R $WEB_SERVER_USER /var/www/moodledata
 sudo chmod -R 777 /var/www/moodledata
 sudo chmod -R 755 /var/www/moodle
+# Determine PHP version
+PHP_VERSION=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
 if [[ "$DEBIAN" == "y" ]]; then
     PHP_CONFIG_DIR="/etc/php/$PHP_VERSION/apache2"
 else
 	PHP_CONFIG_DIR="/etc"
 fi 
-# Determine PHP version
-PHP_VERSION=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
 # Update PHP configuration
 sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' "$PHP_CONFIG_DIR/php.ini"
 sudo sed -i 's/.*post_max_size =.*/post_max_size = 80M/' "$PHP_CONFIG_DIR/php.ini"
