@@ -124,39 +124,54 @@ fi
 # Get PHP and MariaDB version version
 php_version=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
 mariadb_version=$(mysql -u root -e "SELECT VERSION();" | awk '{print $2}')
+
 compatible_moodle_versions=""
+
 # Check compatible Moodle versions based on PHP and MariaDB versions
-if [[ ( "$mariadb_version" >= "5.5.31" && "$mariadb_version" < "10.0" ) && \
-      ( "$php_version" >= "7.0" && "$php_version" < "7.1" ) ]]; then
+# Remove the dot and convert to integer
+mariadb_version_int=$(echo "$mariadb_version" | tr -d '.')
+
+# Check compatible Moodle versions based on PHP and MariaDB versions
+if [[ ( "$mariadb_version_int" -gt 55 && "$mariadb_version_int" -lt 100 ) && \
+      ( "$php_version" -gt 70 && "$php_version" -lt 71 ) ]]; then
     compatible_moodle_versions+="MOODLE_35_STABLE "
 fi
-if [[ ( "$mariadb_version" >= "10.0" && "$mariadb_version" < "10.2.29" ) && \
-      ( "$php_version" >= "7.1" && "$php_version" < "7.3" ) ]]; then
+
+if [[ ( "$mariadb_version_int" -gt 100 && "$mariadb_version_int" -lt 102 ) && \
+      ( "$php_version" -ge 71 && "$php_version" -lt 73 ) ]]; then
     compatible_moodle_versions+="MOODLE_37_STABLE MOODLE_38_STABLE "
 fi
-if [[ ( "$mariadb_version" >= "10.2.29" && "$mariadb_version" < "10.4" ) && \
-      ( "$php_version" >= "7.3" && "$php_version" < "7.4" ) ]]; then
+
+if [[ ( "$mariadb_version_int" -ge 102 && "$mariadb_version_int" -lt 104 ) && \
+      ( "$php_version" -ge 73 && "$php_version" -lt 74 ) ]]; then
     compatible_moodle_versions+="MOODLE_39_STABLE MOODLE_310_STABLE MOODLE_311_STABLE MOODLE_40_STABLE "
 fi
-if [[ ( "$mariadb_version" >= "10.4" && "$mariadb_version" < "10.6.7" ) && \
-      ( "$php_version" >= "7.4" && "$php_version" < "8.0" ) ]]; then
+
+if [[ ( "$mariadb_version_int" -ge 104 && "$mariadb_version_int" -lt 106 ) && \
+      ( "$php_version" -ge 74 && "$php_version" -lt 80 ) ]]; then
     compatible_moodle_versions+="MOODLE_401_STABLE "
 fi
-if [[ "$mariadb_version" == "10.6.7" && ( "$php_version" >= "8.0" && "$php_version" < "8.2" ) ]]; then
+
+if [[ "$mariadb_version_int" -eq 106 && ( "$php_version" -ge 80 && "$php_version" -lt 82 ) ]]; then
     compatible_moodle_versions+="MOODLE_402_STABLE "
 fi
+
+
 # List compatible Moodle versions in order
 IFS=' ' read -ra moodle_versions <<< "$compatible_moodle_versions"
 echo "Moodle releases compatible with this server are:"
 for (( i=0; i<${#moodle_versions[@]}; i++ )); do
     echo "$((i+1)). ${moodle_versions[i]}"
 done
+
 # Prompt user to select a version
 read -p "Select your version (1-${#moodle_versions[@]}) [Default is latest]: " selection
+
 # Set default selection to the latest release
 if [[ -z "$selection" ]]; then
     selection="${#moodle_versions[@]}"
 fi
+
 # Validate user selection
 if [[ "$selection" =~ ^[0-9]+$ && "$selection" -ge 1 && "$selection" -le "${#moodle_versions[@]}" ]]; then
     selected_version="${moodle_versions[$((selection-1))]}"
