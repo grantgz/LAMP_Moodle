@@ -84,7 +84,6 @@ else
 	WEB_SERVER_USER="www-data"
 	echo "Step 1 has completed."
 
-
 	# Step 2 Set up the firewall
 	sudo ufw --force enable
 	# Set default policies to deny incoming and allow outgoing traffic
@@ -125,15 +124,45 @@ fi
 # Get PHP and MariaDB version version
 php_version=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
 mariadb_version=$(mysql -u root -e "SELECT VERSION();" | awk '{print $2}')
-
-# Check if PHP version is >= 8.0 and MariaDB version is >= 10.6.7
-if [ "$(php -r "echo version_compare('$php_version', '8.0');")" -ge 0 ] && [ "$(php -r "echo version_compare('$mariadb_version', '10.6.7');")" -ge 0 ]; then
-    MoodleVersion="MOODLE_402_STABLE"
-else
-    MoodleVersion="MOODLE_401_STABLE"
+compatible_moodle_versions=""
+# Check compatible Moodle versions based on PHP and MariaDB versions
+if [[ "$mariadb_version" == "5.5.31" && "$php_version" == "7.0" ]]; then
+    compatible_moodle_versions+="MOODLE_35_STABLE "
+fi
+if [[ "$mariadb_version" == "10.0" && "$php_version" == "7.1" ]]; then
+    compatible_moodle_versions+="MOODLE_37_STABLE MOODLE_38_STABLE "
+fi
+if [[ "$mariadb_version" == "10.2.29" && "$php_version" == "7.3" ]]; then
+    compatible_moodle_versions+="MOODLE_39_STABLE MOODLE_310_STABLE MOODLE_311_STABLE MOODLE_40_STABLE "
+fi
+if [[ "$mariadb_version" == "10.4" && "$php_version" == "7.4" ]]; then
+    compatible_moodle_versions+="MOODLE_401_STABLE "
+fi
+if [[ "$mariadb_version" == "10.6.7" && ( "$php_version" == "8.0" || "$php_version" == "8.1" ) ]]; then
+    compatible_moodle_versions+="MOODLE_402_STABLE "
 fi
 
-echo "Installing $MoodleVersion based on your php version $php_version"
+# List compatible Moodle versions in order
+IFS=' ' read -ra moodle_versions <<< "$compatible_moodle_versions"
+echo "Moodle releases compatible with this server are:"
+for (( i=0; i<${#moodle_versions[@]}; i++ )); do
+    echo "$((i+1)). ${moodle_versions[i]}"
+done
+# Prompt user to select a version
+read -p "Select your version (1-${#moodle_versions[@]}) [Default is latest]: " selection
+# Set default selection to the latest release
+if [[ -z "$selection" ]]; then
+    selection="${#moodle_versions[@]}"
+fi
+# Validate user selection
+if [[ "$selection" =~ ^[0-9]+$ && "$selection" -ge 1 && "$selection" -le "${#moodle_versions[@]}" ]]; then
+    selected_version="${moodle_versions[$((selection-1))]}"
+    echo "Selected Moodle version: $selected_version"
+else
+    echo "Invalid selection."
+fi
+
+echo "Installing $MoodleVersion based on your selection  $php_version"
 echo "Cloning Moodle repository into /opt and copying to /var/www/"
 echo "Be patient, this can take several minutes."
 cd /var/www
@@ -298,6 +327,7 @@ sudo mysqladmin -u root password "$MYSQL_ROOT_PASSWORD"
 echo "Creating the Moodle database and user..."
 mysql -u root -p"$MYSQL_ROOT_PASSWORD" <<EOF
 CREATE DATABASE moodle DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+SET GLOBAL innodb_file_format = Barracuda;
 CREATE USER 'moodleuser'@'localhost' IDENTIFIED BY '$MYSQL_MOODLEUSER_PASSWORD';
 GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, CREATE TEMPORARY TABLES, DROP, INDEX, ALTER ON moodle.* TO 'moodleuser'@'localhost';
 \q

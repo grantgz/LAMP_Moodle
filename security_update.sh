@@ -13,11 +13,14 @@ log "Starting Moodle security update process."
 # Change to the Moodle installation directory
 cd /var/www/moodle
 
+# Capture the SHA-1 hash of the existing commit
+LAST_COMMIT=$(git rev-parse HEAD)
+
 # Fetch the latest changes from the remote repository
 log "Fetching latest changes from origin."
 git fetch origin
 
-# Capture the SHA-1 hash of the latest commit
+# Capture the SHA-1 hash of the new commit
 LATEST_COMMIT=$(git rev-parse HEAD)
 
 # Check if there are new commits since the last update
