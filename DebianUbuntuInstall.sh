@@ -119,40 +119,43 @@ EOF
    
 fi
  
-
 # Step 4 Clone the Moodle repository into /var/www
 # Get PHP and MariaDB version version
-php_version=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
-mariadb_version=$(mysql -u root -e "SELECT VERSION();" | awk '{print $2}')
+php_version_int=$(php -r 'echo PHP_MAJOR_VERSION,PHP_MINOR_VERSION;')
+mariadb_version=$(mysqladmin --version | awk '{print $5}' |  tr -d -c 0-9)
 
 compatible_moodle_versions=""
 
-# Check compatible Moodle versions based on PHP and MariaDB versions
 # Remove the dot and convert to integer
 mariadb_version_int=$(echo "$mariadb_version" | tr -d '.')
 
 # Check compatible Moodle versions based on PHP and MariaDB versions
-if [[ ( "$mariadb_version_int" -gt 55 && "$mariadb_version_int" -lt 100 ) && \
-      ( "$php_version" -gt 70 && "$php_version" -lt 71 ) ]]; then
+if [[ ( "$mariadb_version_int" -gt 5531  && "$mariadb_version_int" -lt 10500 ) && \
+      ( "$php_version_int" -gt 70 && "$php_version_int" -lt 73 ) ]]; then
     compatible_moodle_versions+="MOODLE_35_STABLE "
 fi
 
-if [[ ( "$mariadb_version_int" -gt 100 && "$mariadb_version_int" -lt 102 ) && \
-      ( "$php_version" -ge 71 && "$php_version" -lt 73 ) ]]; then
+if [[ ( "$mariadb_version_int" -gt 10000 && "$mariadb_version_int" -lt 10500 ) && \
+      ( "$php_version_int" -ge 71 && "$php_version_int" -lt 74) ]]; then
     compatible_moodle_versions+="MOODLE_37_STABLE MOODLE_38_STABLE "
 fi
 
-if [[ ( "$mariadb_version_int" -ge 102 && "$mariadb_version_int" -lt 104 ) && \
-      ( "$php_version" -ge 73 && "$php_version" -lt 74 ) ]]; then
-    compatible_moodle_versions+="MOODLE_39_STABLE MOODLE_310_STABLE MOODLE_311_STABLE MOODLE_40_STABLE "
+if [[ ( "$mariadb_version_int" -ge 10229 && "$mariadb_version_int" -lt 10500 ) && \
+      ( "$php_version_int" -ge 72 && "$php_version_int" -lt 74) ]]; then
+    compatible_moodle_versions+="MOODLE_39_STABLE MOODLE_310_STABLE"
 fi
 
-if [[ ( "$mariadb_version_int" -ge 104 && "$mariadb_version_int" -lt 106 ) && \
-      ( "$php_version" -ge 74 && "$php_version" -lt 80 ) ]]; then
+if [[ ( "$mariadb_version_int" -ge 10229 && "$mariadb_version_int" -lt 10667 ) && \
+      ( "$php_version_int" -ge 73 && "$php_version_int" -lt 80) ]]; then
+    compatible_moodle_versions+="MOODLE_311_STABLE MOODLE_40_STABLE "
+fi
+
+if [[ ( "$mariadb_version_int" -ge 10400 && "$mariadb_version_int" -lt 10667 ) && \
+      ( "$php_version_int" -ge 74 && "$php_version_int" -lt 80) ]]; then
     compatible_moodle_versions+="MOODLE_401_STABLE "
 fi
 
-if [[ "$mariadb_version_int" -eq 106 && ( "$php_version" -ge 80 && "$php_version" -lt 82 ) ]]; then
+if [[ "$mariadb_version_int" -ge 10667 && ( "$php_version_int" -ge 80 && "$php_version_int" -lt 82 ) ]]; then
     compatible_moodle_versions+="MOODLE_402_STABLE "
 fi
 
@@ -163,6 +166,7 @@ echo "Moodle releases compatible with this server are:"
 for (( i=0; i<${#moodle_versions[@]}; i++ )); do
     echo "$((i+1)). ${moodle_versions[i]}"
 done
+
 
 # Prompt user to select a version
 read -p "Select your version (1-${#moodle_versions[@]}) [Default is latest]: " selection
@@ -180,7 +184,7 @@ else
     echo "Invalid selection."
 fi
 
-echo "Installing $MoodleVersion based on your selection  $php_version"
+echo "Installing $MoodleVersion based on your selection: $php_version"
 echo "Cloning Moodle repository into /opt and copying to /var/www/"
 echo "Be patient, this can take several minutes."
 cd /var/www
