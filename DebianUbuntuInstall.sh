@@ -132,22 +132,22 @@ mariadb_version_int=$(echo "$mariadb_version" | tr -d '.')
 # Check compatible Moodle versions based on PHP and MariaDB versions
 if [[ ( "$mariadb_version_int" -gt 5531  && "$mariadb_version_int" -lt 10500 ) && \
       ( "$php_version_int" -gt 70 && "$php_version_int" -lt 73 ) ]]; then
-    compatible_moodle_versions+="MOODLE_35_STABLE "
+    compatible_moodle_versions+="MOODLE_3518 MOODLE_3610"
 fi
 
 if [[ ( "$mariadb_version_int" -gt 10000 && "$mariadb_version_int" -lt 10500 ) && \
       ( "$php_version_int" -ge 71 && "$php_version_int" -lt 74) ]]; then
-    compatible_moodle_versions+="MOODLE_37_STABLE MOODLE_38_STABLE "
+    compatible_moodle_versions+="MOODLE_379 MOODLE_389 "
 fi
 
 if [[ ( "$mariadb_version_int" -ge 10229 && "$mariadb_version_int" -lt 10500 ) && \
       ( "$php_version_int" -ge 72 && "$php_version_int" -lt 74) ]]; then
-    compatible_moodle_versions+="MOODLE_39_STABLE MOODLE_310_STABLE"
+    compatible_moodle_versions+="MOODLE_39_STABLE MOODLE_31011"
 fi
 
 if [[ ( "$mariadb_version_int" -ge 10229 && "$mariadb_version_int" -lt 10667 ) && \
       ( "$php_version_int" -ge 73 && "$php_version_int" -lt 80) ]]; then
-    compatible_moodle_versions+="MOODLE_311_STABLE MOODLE_40_STABLE "
+    compatible_moodle_versions+="MOODLE_311_STABLE MOODLE_400_STABLE "
 fi
 
 if [[ ( "$mariadb_version_int" -ge 10400 && "$mariadb_version_int" -lt 10667 ) && \
@@ -362,7 +362,8 @@ sudo bash -c "echo 'Installation script' > /etc/moodle_installation/info.txt"
 sudo bash -c "echo 'Date and Time of Installation: $(date)' >> /etc/moodle_installation/info.txt"
 sudo bash -c "echo 'Web Address: $WEBSITE_ADDRESS ' >> /etc/moodle_installation/info.txt"
 sudo bash -c "echo 'Moodle SQL user password: $MYSQL_MOODLEUSER_PASSWORD' >> /etc/moodle_installation/info.txt"
-sudo bash -c "echo 'Moodle root user password: $MYSQL_ROOT_PASSWORD' >> /etc/moodle_installation/info.txt"
+sudo bash -c "echo 'Original SQL root user password: $MYSQL_ROOT_PASSWORD' >> /etc/moodle_installation/info.txt"
+sudo bash -c "echo 'This SQL root user password will be incorrect if you have changed it in the SQL Security script' >> /etc/moodle_installation/info.txt"
 sudo bash -c "echo 'The following password is used by admin to log on to Moodle' >> /etc/moodle_installation/info.txt"
 sudo bash -c "echo 'Moodle Site Password for admin: $MOODLE_ADMIN_PASSWORD' >> /etc/moodle_installation/info.txt"
 cat /etc/moodle_installation/info.txt
@@ -398,9 +399,16 @@ else
     echo "Error: Moodle installation encountered an error. Go to $WEBSITE_ADDRESS and follow the prompts to complete the installation."
 
 fi
-# Display the generated passwords (if needed, for reference)
-sudo cat /etc/moodle_installation/info.txt
 #Step 9 has finished"
+
+# Display the generated passwords (if needed, for reference)
+echo "Now the secure mySql script is about to run"
+echo "Your present SQL root password is $MYSQL_ROOT_PASSWORD"
+echo "Enter this password when prompted. "
+echo "Suggest - enter 'n' for change password, press enter to accept default suggestion for all others"
+echo "If you change the root password, WRITE IT DOWN. "
+echo "Are you ready to secure the database" 
+sudo cat /etc/moodle_installation/info.txt
 
 
 
