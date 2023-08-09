@@ -121,72 +121,52 @@ fi
  
 # Step 4 Clone the Moodle repository into /var/www
 # Get PHP and MariaDB version version
-php_version_int=$(php -r 'echo PHP_MAJOR_VERSION,PHP_MINOR_VERSION;')
+php_version=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
 mariadb_version=$(mysqladmin --version | awk '{print $5}' |  tr -d -c 0-9)
-mariadb_version_int=$(echo "$mariadb_version" | tr -d '.')
 compatible_moodle_versions=""
-
-
-#debug
-echo "php_version_int $php_version_int"
-echo "mariadb_version_int $mariadb_version_int"
-#debug
-
-# Check compatible Moodle versions based on PHP and MariaDB versions
-if [[ ( "$mariadb_version_int" -gt 5531  && "$mariadb_version_int" -lt 10500 ) && \
-      ( "$php_version_int" -gt 70 && "$php_version_int" -lt 73 ) ]]; then
-    compatible_moodle_versions+="MOODLE_3518 MOODLE_3610 "
-fi
-
-if [[ ( "$mariadb_version_int" -gt 10000 && "$mariadb_version_int" -lt 10500 ) && \
-      ( "$php_version_int" -ge 71 && "$php_version_int" -lt 74) ]]; then
-    compatible_moodle_versions+="MOODLE_379 MOODLE_389 "
-fi
-
-if [[ ( "$mariadb_version_int" -ge 10229 && "$mariadb_version_int" -lt 10500 ) && \
-      ( "$php_version_int" -ge 72 && "$php_version_int" -lt 74) ]]; then
-    compatible_moodle_versions+="MOODLE_39_STABLE MOODLE_31011 "
-fi
-
-if [[ ( "$mariadb_version_int" -ge 10229 && "$mariadb_version_int" -lt 10667 ) && \
-      ( "$php_version_int" -ge 73 && "$php_version_int" -lt 80) ]]; then
-    compatible_moodle_versions+="MOODLE_311_STABLE MOODLE_400_STABLE "
-fi
-
-if [[ ( "$mariadb_version_int" -ge 10400 && "$mariadb_version_int" -lt 10667 ) && \
-      ( "$php_version_int" -ge 74 && "$php_version_int" -lt 80) ]]; then
-    compatible_moodle_versions+="MOODLE_401_STABLE "
-fi
-
-if [[ "$mariadb_version_int" -ge 10667 && ( "$php_version_int" -ge 80 && "$php_version_int" -lt 82 ) ]]; then
-    compatible_moodle_versions+="MOODLE_402_STABLE "
-fi
-
-
+## Check compatible Moodle versions based on PHP and MariaDB versions
+case "$php_version-$mariadb_version" in
+    "5.6.5-5.5.31")
+        compatible_moodle_versions="MOODLE_329"
+        ;;
+    "7.0-5.5.31")
+        compatible_moodle_versions="MOODLE_349 MOODLE_3518 MOODLE_3610"
+        ;;
+    "7.1-5.5.31")
+        compatible_moodle_versions="MOODLE_379 MOODLE_389"
+        ;;
+    "7.2-10.2.29")
+        compatible_moodle_versions="MOODLE_39_STABLE MOODLE_31011"
+        ;;
+    "7.3-10.2.29")
+        compatible_moodle_versions="MOODLE_311_STABLE MOODLE_400_STABLE"
+        ;;
+    "8.0-10.6.7")
+        compatible_moodle_versions="MOODLE_402_STABLE"
+        ;;
+    *)
+        # Default case
+        ;;
+esac
 # List compatible Moodle versions in order
 IFS=' ' read -ra moodle_versions <<< "$compatible_moodle_versions"
 echo "Moodle releases compatible with this server are:"
 for (( i=0; i<${#moodle_versions[@]}; i++ )); do
     echo "$((i+1)). ${moodle_versions[i]}"
 done
-
-
 # Prompt user to select a version
 read -p "Select your version (1-${#moodle_versions[@]}) [Default is latest]: " selection
-
 # Set default selection to the latest release
 if [[ -z "$selection" ]]; then
     selection="${#moodle_versions[@]}"
 fi
-
 # Validate user selection
 if [[ "$selection" =~ ^[0-9]+$ && "$selection" -ge 1 && "$selection" -le "${#moodle_versions[@]}" ]]; then
     selected_version="${moodle_versions[$((selection-1))]}"
     echo "Selected Moodle version: $selected_version"
 else
     echo "Invalid selection."
-fi
-
+fiS
 echo "Installing $MoodleVersion based on your selection: $php_version"
 echo "Cloning Moodle repository into /opt and copying to /var/www/"
 echo "Be patient, this can take several minutes."
@@ -404,13 +384,23 @@ else
 fi
 #Step 9 has finished"
 
-# Display the generated passwords (if needed, for reference)
-echo "Now the secure mySql script is about to run"
+# Secure the databse and display the generated passwords (if needed, for reference)
+echo "Now the secure MySQL script is about to run"
 echo "Your present SQL root password is $MYSQL_ROOT_PASSWORD"
-echo "Enter this password when prompted. "
+echo "Enter this password when prompted."
 echo "Suggest - enter 'n' for change password, press enter to accept default suggestion for all others"
-echo "If you change the root password, WRITE IT DOWN. "
-echo "Are you ready to secure the database" 
+echo "If you change the SQL root password, WRITE IT DOWN."
+read -p "Are you ready to secure the database? (y/n) [Default is 'y']: " answer
+
+# Convert user input to lowercase for comparison
+answer=${answer,,}
+
+if [[ "$answer" == "y" ]]; then
+    # Run the MySQL secure installation script
+    sudo mysql_secure_installation
+else
+    echo "Database secure installation is not performed."
+fi
 sudo cat /etc/moodle_installation/info.txt
 
 
