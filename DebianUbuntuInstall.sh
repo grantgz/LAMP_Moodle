@@ -123,16 +123,19 @@ fi
 # Get PHP and MariaDB version version
 php_version_int=$(php -r 'echo PHP_MAJOR_VERSION,PHP_MINOR_VERSION;')
 mariadb_version=$(mysqladmin --version | awk '{print $5}' |  tr -d -c 0-9)
-
+mariadb_version_int=$(echo "$mariadb_version" | tr -d '.')
 compatible_moodle_versions=""
 
-# Remove the dot and convert to integer
-mariadb_version_int=$(echo "$mariadb_version" | tr -d '.')
+
+#debug
+echo "php_version_int $php_version_int"
+echo "mariadb_version_int $mariadb_version_int"
+#debug
 
 # Check compatible Moodle versions based on PHP and MariaDB versions
 if [[ ( "$mariadb_version_int" -gt 5531  && "$mariadb_version_int" -lt 10500 ) && \
       ( "$php_version_int" -gt 70 && "$php_version_int" -lt 73 ) ]]; then
-    compatible_moodle_versions+="MOODLE_3518 MOODLE_3610"
+    compatible_moodle_versions+="MOODLE_3518 MOODLE_3610 "
 fi
 
 if [[ ( "$mariadb_version_int" -gt 10000 && "$mariadb_version_int" -lt 10500 ) && \
@@ -142,7 +145,7 @@ fi
 
 if [[ ( "$mariadb_version_int" -ge 10229 && "$mariadb_version_int" -lt 10500 ) && \
       ( "$php_version_int" -ge 72 && "$php_version_int" -lt 74) ]]; then
-    compatible_moodle_versions+="MOODLE_39_STABLE MOODLE_31011"
+    compatible_moodle_versions+="MOODLE_39_STABLE MOODLE_31011 "
 fi
 
 if [[ ( "$mariadb_version_int" -ge 10229 && "$mariadb_version_int" -lt 10667 ) && \
