@@ -80,7 +80,7 @@ else
 	sudo DEBIAN_FRONTEND=noninteractive apt-get install -y unattended-upgrades
 	#Install Debian default database MariaDB 
 	sudo apt-get install -y mariadb-server mariadb-client
-	sudo apt install certbot python3-certbot-apache
+	sudo apt install -y certbot python3-certbot-apache
 	WEB_SERVER_USER="www-data"
 	echo "Step 1 has completed."
 
@@ -156,12 +156,6 @@ fi
 if [[ "$mariadb_version_int" -ge 10667 && ( "$php_version" -ge 80 && "$php_version" -lt 82 ) ]]; then
     compatible_moodle_versions+="MOODLE_402_STABLE "
 fi
-# List compatible Moodle versions in order
-IFS=' ' read -ra moodle_versions <<< "$compatible_moodle_versions"
-echo "Moodle releases compatible with this server are:"
-for (( i=0; i<${#moodle_versions[@]}; i++ )); do
-    echo "$((i+1)). ${moodle_versions[i]}"
-done
 
 # List compatible Moodle versions in order
 IFS=' ' read -ra moodle_versions <<< "$compatible_moodle_versions"
@@ -169,18 +163,20 @@ echo "Moodle releases compatible with this server are:"
 for (( i=0; i<${#moodle_versions[@]}; i++ )); do
     echo "$((i+1)). ${moodle_versions[i]}"
 done
+
 # Prompt user to select a version
 read -p "Select your version (1-${#moodle_versions[@]}) [Default is latest]: " selection
 # Set default selection to the latest release
 if [[ -z "$selection" ]]; then
     selection="${#moodle_versions[@]}"
 fi
+
 # Validate user selection
 if [[ "$selection" =~ ^[0-9]+$ && "$selection" -ge 1 && "$selection" -le "${#moodle_versions[@]}" ]]; then
     selected_version="${moodle_versions[$((selection-1))]}"
     echo "Selected Moodle version: $selected_version"
 else
-    echo "Invalid selection."
+    echo "MaraiaDB and php versions on this server areincompatible with Moodle versions"
 fiS
 echo "Installing $MoodleVersion based on your selection: $php_version"
 echo "Cloning Moodle repository into /opt and copying to /var/www/"
