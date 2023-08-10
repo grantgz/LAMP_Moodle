@@ -123,9 +123,29 @@ fi
 # Get PHP and MariaDB version version
 # Based on chart http://www.syndrega.ch/blog/
 php_version=$(php -r 'echo PHP_MAJOR_VERSION,PHP_MINOR_VERSION;')
+
 mariadb_version=$(mysqladmin --version | awk '{print $5}' |  tr -d -c 0-9)
 # Remove the dot and convert to integer
 mariadb_version_int=$(echo "$mariadb_version" | tr -d '.')
+# Define the configuration file path based on the distribution
+if [ -f "/etc/mysql/my.cnf" ]; then
+    config_file="/etc/mysql/my.cnf" # Debian/Ubuntu
+elif [ -f "/etc/my.cnf" ]; then
+    config_file="/etc/my.cnf" # Red Hat-based
+else
+    echo "Error: MySQL configuration file not found!"
+    exit 1
+fi
+# Compare the numerical version with 10667 (10.6.67)
+if [[ "$mariadb_version_int" -lt 10667 ]]; then
+    # Add or modify the configuration options in the appropriate config file
+    echo "innodb_file_format = Barracuda" >> "$config_file"
+    echo "innodb_large_prefix = 1" >> "$config_file"
+    echo "innodb_file_per_table = ON" >> "$config_file"
+    
+    # Restart MariaDB to apply the changes
+    systemctl restart mariadb
+fi
 compatible_moodle_versions=""
 
 # Check compatible Moodle versions based on PHP and MariaDB versions
@@ -173,7 +193,6 @@ fi
 
 # Validate user selection
 if [[ "$selection" =~ ^[0-9]+$ && "$selection" -ge 1 && "$selection" -le "${#moodle_versions[@]}" ]]; then
-    selected_version="${moodle_versions[$((selection-1))]}"
     MoodleVersion="${moodle_versions[$((selection-1))]}"
     echo "Selected Moodle version: $selected_version"
 else
@@ -267,13 +286,11 @@ sudo chmod -R 755 /var/www/moodle
 # Determine PHP version
 PHP_VERSION=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
 if [[ "$DEBIAN" == "y" ]]; then
-    PHP_CONFIG_DIR="/etc/php/$PHP_VERSION/apache2"
     PHP_CONFIG_DIR="/etc/php/$PHP_VERSION"
 else
 	PHP_CONFIG_DIR="/etc"
 fi 
 # Update PHP configuration
-sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' "$PHP_CONFIG_DIR/php.ini"
 sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' "$PHP_CONFIG_DIR/apache2/php.ini"
 sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' "$PHP_CONFIG_DIR/cli/php.ini"
 sudo sed -i 's/.*post_max_size =.*/post_max_size = 80M/' "$PHP_CONFIG_DIR/php.ini"
