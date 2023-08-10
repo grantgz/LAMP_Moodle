@@ -121,33 +121,48 @@ fi
  
 # Step 4 Clone the Moodle repository into /var/www
 # Get PHP and MariaDB version version
-php_version=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
+# Based on chart http://www.syndrega.ch/blog/
+php_version=$(php -r 'echo PHP_MAJOR_VERSION,PHP_MINOR_VERSION;')
 mariadb_version=$(mysqladmin --version | awk '{print $5}' |  tr -d -c 0-9)
+# Remove the dot and convert to integer
+mariadb_version_int=$(echo "$mariadb_version" | tr -d '.')
 compatible_moodle_versions=""
-## Check compatible Moodle versions based on PHP and MariaDB versions
-case "$php_version-$mariadb_version" in
-    "5.6.5-5.5.31")
-        compatible_moodle_versions="MOODLE_329"
-        ;;
-    "7.0-5.5.31")
-        compatible_moodle_versions="MOODLE_349 MOODLE_3518 MOODLE_3610"
-        ;;
-    "7.1-5.5.31")
-        compatible_moodle_versions="MOODLE_379 MOODLE_389"
-        ;;
-    "7.2-10.2.29")
-        compatible_moodle_versions="MOODLE_39_STABLE MOODLE_31011"
-        ;;
-    "7.3-10.2.29")
-        compatible_moodle_versions="MOODLE_311_STABLE MOODLE_400_STABLE"
-        ;;
-    "8.0-10.6.7")
-        compatible_moodle_versions="MOODLE_402_STABLE"
-        ;;
-    *)
-        # Default case
-        ;;
-esac
+
+# Check compatible Moodle versions based on PHP and MariaDB versions
+if [[ ( "$mariadb_version_int" -ge 5531  && "$mariadb_version_int" -le 10500 ) && \
+      ( "$php_version" -ge 70 && "$php_version" -le 72 ) ]]; then
+    compatible_moodle_versions+="MOODLE_35_STABLE "
+fi
+if [[ ( "$mariadb_version_int" -ge 10000  && "$mariadb_version_int" -le 10500 ) && \
+      ( "$php_version" -ge 71 && "$php_version" -le 73 ) ]]; then
+    compatible_moodle_versions+="MOODLE_37_STABLE "
+fi
+if [[ ( "$mariadb_version_int" -ge 10000  && "$mariadb_version_int" -le 10500 ) && \
+      ( "$php_version" -ge 71 && "$php_version" -le 74 ) ]]; then
+    compatible_moodle_versions+="MOODLE_38_STABLE "
+fi
+if [[ ( "$mariadb_version_int" -ge 10229  && "$mariadb_version_int" -le 10667 ) && \
+      ( "$php_version" -ge 72 && "$php_version" -le 74 ) ]]; then
+     compatible_moodle_versions+="MOODLE_39_STABLE MOODLE_310_STABLE "
+fi
+if [[ ( "$mariadb_version_int" -ge 10229  && "$mariadb_version_int" -le 10667 ) && \
+      ( "$php_version" -ge 73 && "$php_version" -le 80 ) ]]; then
+     compatible_moodle_versions+="MOODLE_311_STABLE MOODLE_40_STABLE "
+fi
+if [[ ( "$mariadb_version_int" -ge 10229  && "$mariadb_version_int" -le 10667 ) && \
+      ( "$php_version" -ge 74 && "$php_version" -le 81 ) ]]; then
+     compatible_moodle_versions+="MOODLE_401_STABLE "
+fi
+if [[ "$mariadb_version_int" -ge 10667 && ( "$php_version" -ge 80 && "$php_version" -lt 82 ) ]]; then
+    compatible_moodle_versions+="MOODLE_402_STABLE "
+fi
+# List compatible Moodle versions in order
+IFS=' ' read -ra moodle_versions <<< "$compatible_moodle_versions"
+echo "Moodle releases compatible with this server are:"
+for (( i=0; i<${#moodle_versions[@]}; i++ )); do
+    echo "$((i+1)). ${moodle_versions[i]}"
+done
+
 # List compatible Moodle versions in order
 IFS=' ' read -ra moodle_versions <<< "$compatible_moodle_versions"
 echo "Moodle releases compatible with this server are:"
@@ -402,6 +417,7 @@ else
     echo "Database secure installation is not performed."
 fi
 sudo cat /etc/moodle_installation/info.txt
+echo "For better security on web accessible sites, copy the contents of /etc/moodle_installation/info.txt to your password manager and delete the file"
 
 
 
