@@ -382,9 +382,7 @@ sudo bash -c "echo 'This SQL root user password will be incorrect if you have ch
 sudo bash -c "echo 'The following password is used by admin to log on to Moodle' >> /etc/moodle_installation/info.txt"
 sudo bash -c "echo 'Moodle Site Password for admin: $MOODLE_ADMIN_PASSWORD' >> /etc/moodle_installation/info.txt"
 cat /etc/moodle_installation/info.txt
-
-
-echo "Step 10 has completed."
+echo "Step 10 Database setup has completed."
 
 #Step 9 Finish the install 
 echo "The script will now try to finish the installation. If this fails, log on to your site at $WEBSITE_ADDRESS and follow the prompts."
