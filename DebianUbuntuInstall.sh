@@ -174,6 +174,7 @@ fi
 # Validate user selection
 if [[ "$selection" =~ ^[0-9]+$ && "$selection" -ge 1 && "$selection" -le "${#moodle_versions[@]}" ]]; then
     selected_version="${moodle_versions[$((selection-1))]}"
+    MoodleVersion="${moodle_versions[$((selection-1))]}"
     echo "Selected Moodle version: $selected_version"
 else
     echo "MaraiaDB and php versions on this server are incompatible with Moodle versions"
@@ -267,11 +268,14 @@ sudo chmod -R 755 /var/www/moodle
 PHP_VERSION=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
 if [[ "$DEBIAN" == "y" ]]; then
     PHP_CONFIG_DIR="/etc/php/$PHP_VERSION/apache2"
+    PHP_CONFIG_DIR="/etc/php/$PHP_VERSION"
 else
 	PHP_CONFIG_DIR="/etc"
 fi 
 # Update PHP configuration
 sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' "$PHP_CONFIG_DIR/php.ini"
+sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' "$PHP_CONFIG_DIR/apache2/php.ini"
+sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' "$PHP_CONFIG_DIR/cli/php.ini"
 sudo sed -i 's/.*post_max_size =.*/post_max_size = 80M/' "$PHP_CONFIG_DIR/php.ini"
 sudo sed -i 's/.*upload_max_filesize =.*/upload_max_filesize = 80M/' "$PHP_CONFIG_DIR/php.ini"
 # Restart the web server based on distribution
@@ -344,7 +348,6 @@ sudo mysqladmin -u root password "$MYSQL_ROOT_PASSWORD"
 echo "Creating the Moodle database and user..."
 mysql -u root -p"$MYSQL_ROOT_PASSWORD" <<EOF
 CREATE DATABASE moodle DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-SET GLOBAL innodb_file_format = Barracuda;
 CREATE USER 'moodleuser'@'localhost' IDENTIFIED BY '$MYSQL_MOODLEUSER_PASSWORD';
 GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, CREATE TEMPORARY TABLES, DROP, INDEX, ALTER ON moodle.* TO 'moodleuser'@'localhost';
 \q
