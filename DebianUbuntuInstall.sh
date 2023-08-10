@@ -142,6 +142,7 @@ if [[ "$mariadb_version_int" -lt 10667 ]]; then
     echo "innodb_file_format = Barracuda" >> "$config_file"
     echo "innodb_large_prefix = 1" >> "$config_file"
     echo "innodb_file_per_table = ON" >> "$config_file"
+    echo "Modified the $config_file"
     
     # Restart MariaDB to apply the changes
     systemctl restart mariadb
