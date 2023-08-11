@@ -13,14 +13,12 @@ chmod +x Debian11.sh
 sudo ./Debian11.sh
 
 Ubuntu 20.04 php 7.4 MariaDB 10.3.38
-
 Moodle releases compatible with this server are:
 1. MOODLE_38_STABLE
 2. MOODLE_39_STABLE
 3. MOODLE_310_STABLE
 4. MOODLE_311_STABLE
 5. MOODLE_40_STABLE
-6. MOODLE_401_STABLE
 Select your version (1-6) [Default is latest]: 
 
 
