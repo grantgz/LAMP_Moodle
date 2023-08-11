@@ -199,7 +199,7 @@ if [[ "$selection" =~ ^[0-9]+$ && "$selection" -ge 1 && "$selection" -le "${#moo
 else
     echo "MaraiaDB and php versions on this server are incompatible with Moodle versions"
 fi
-echo "Installing $MoodleVersion based on your selection: $php_version"
+echo "Debug: $php: php_version MariaDB: $mariadb_version"
 echo "Cloning Moodle repository into /opt and copying to /var/www/"
 echo "Be patient, this can take several minutes."
 
