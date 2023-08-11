@@ -137,7 +137,7 @@ else
     exit 1
 fi
 # Compare the numerical version with 10667 (10.6.67)
-if [[ "$mariadb_version_int" -lt 10667 ]]; then
+if [[ "$mariadb_version_int" -lt 10310 ]]; then
     # Add or modify the configuration options in the appropriate config file
     echo "innodb_file_format = Barracuda" >> "$config_file"
     echo "innodb_large_prefix = 1" >> "$config_file"
