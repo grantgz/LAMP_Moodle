@@ -1,17 +1,26 @@
-wget https://raw.githubusercontent.com/steerpike5/LAMP_Moodle/main/Centos9.sh -O /tmp/Centos9.sh
-chmod +x /tmp/Centos9.sh
-/tmp/Centos9.sh
-
-sudo wget https://raw.githubusercontent.com/steerpike5/LAMP_Moodle/main/UbuntuMoodle402.sh -O /tmp/UbuntuMoodle402.sh
-sudo chmod +x /tmp/UbuntuMoodle402.sh; sudo /tmp/UbuntuMoodle402.sh
+sudo wget -O "/tmp/DebianUbuntuInstall.sh" "https://github.com/steerpike5/LAMP_Moodle/raw/FQDN/DebianUbuntuInstall.sh"
 
 
-sudo wget https://raw.githubusercontent.com/steerpike5/LAMP_Moodle/main/Debian11.sh -O /tmp/Debian11.sh
-sudo chmod +x /tmp/Debian11.sh; sudo /tmp/Debian11.sh
+sudo chmod +x /tmp/DebianUbuntuInstall.sh; sudo  /tmp/DebianUbuntuInstall.sh
+http://194.36.170.141
 
-http://45.159.211.175/
+
+
 http://steerpike.online
 
 wget https://github.com/steerpike5/LAMP_Moodle/raw/FQDN/Debian11.sh
 chmod +x Debian11.sh
 sudo ./Debian11.sh
+
+Ubuntu 20.04 php 7.4 MariaDB 10.3.38
+
+Moodle releases compatible with this server are:
+1. MOODLE_38_STABLE
+2. MOODLE_39_STABLE
+3. MOODLE_310_STABLE
+4. MOODLE_311_STABLE
+5. MOODLE_40_STABLE
+6. MOODLE_401_STABLE
+Select your version (1-6) [Default is latest]: 
+
+

@@ -170,7 +170,7 @@ if [[ ( "$mariadb_version_int" -ge 10229  && "$mariadb_version_int" -le 10667 ) 
       ( "$php_version" -ge 73 && "$php_version" -le 80 ) ]]; then
      compatible_moodle_versions+="MOODLE_311_STABLE MOODLE_40_STABLE "
 fi
-if [[ ( "$mariadb_version_int" -ge 10229  && "$mariadb_version_int" -le 10667 ) && \
+if [[ ( "$mariadb_version_int" -ge 10400  && "$mariadb_version_int" -le 10667 ) && \
       ( "$php_version" -ge 74 && "$php_version" -le 81 ) ]]; then
      compatible_moodle_versions+="MOODLE_401_STABLE "
 fi
