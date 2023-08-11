@@ -138,14 +138,32 @@ else
 fi
 # Compare the numerical version with 10667 (10.6.67)
 if [[ "$mariadb_version_int" -lt 10310 ]]; then
-    # Add or modify the configuration options in the appropriate config file
-    echo "innodb_file_format = Barracuda" >> "$config_file"
-    echo "innodb_large_prefix = 1" >> "$config_file"
-    echo "innodb_file_per_table = ON" >> "$config_file"
+    # Create a temporary file with the desired configuration options
+    tmp_file=$(mktemp)
+    echo "innodb_file_format=Barracuda" >> "$tmp_file"
+    echo "innodb_large_prefix=1" >> "$tmp_file"
+    echo "innodb_file_per_table=ON" >> "$tmp_file"
+
+    # Read the existing my.cnf file and split it
+    config_file="/etc/mysql/my.cnf"
+    before_mysqld=$(sed -n '/^\[mysqld\]/q;p' "$config_file")
+    after_mysqld=$(sed -e '/^\[mysqld\]/,$!d' "$config_file")
+
+    # Concatenate the parts with the temporary file content
+    modified_config="$before_mysqld
+$after_mysqld
+$(cat "$tmp_file")"
+
+    # Write the modified contents back to my.cnf
+    echo "$modified_config" > "$config_file"
+    
+    # Clean up temporary file
+    rm "$tmp_file"
+
     echo "Modified the $config_file"
     
     # Restart MariaDB to apply the changes
-    systemctl restart mariadb
+    sudo systemctl restart mariadb
 fi
 compatible_moodle_versions=""
 
