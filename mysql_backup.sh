@@ -2,7 +2,7 @@
 
 # Set variables
 TIMESTAMP=$(date +'%Y%m%d%H%M%S')
-BACKUP_DIR="/home/backupuser"
+BACKUP_DIR="/var/backups/moodle"
 MAX_AGE_DAYS=5
 
 # Perform MySQL backup

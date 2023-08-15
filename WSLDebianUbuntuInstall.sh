@@ -1,4 +1,6 @@
 #!/bin/bash
+#Tues 3.pm
+
 # Prompt for the web address
 read -p "Enter the web address: " WEBSITE_ADDRESS
 
@@ -30,6 +32,24 @@ sudo apt install -y certbot python3-certbot-apache
 WEB_SERVER_USER="www-data"
 echo "Step 1 apt install has completed."
 
+
+## Changing tabs confuses Geany
+	-# Configure unattended-upgrades
+sudo tee /etc/apt/apt.conf.d/50unattended-upgrades <<EOF
+Unattended-Upgrade::Allowed-Origins {
+    "\${distro_id}:\${distro_codename}";
+    "\${distro_id}:\${distro_codename}-security";
+    "\${distro_id}:\${distro_codename}-updates";
+};
+EOF
+# Enable automatic updates
+sudo tee /etc/apt/apt.conf.d/20auto-upgrades <<EOF
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+EOF
+	# Restart the unattended-upgrades service
+	sudo systemctl restart unattended-upgrades
+	echo "Step 3 has completed."
  
 # Step 2 Get PHP and MariaDB version 
 # Select Moodle version and set database variables where necessary
@@ -125,6 +145,48 @@ git config pull.ff only
 echo "Step 2 has completed."
 
 
+
+# Step 5a  Create a user to run backups
+# Generate a random password for backupuser
+# Set backup directory and permissions
+BACKUP_DIR="/var/backups/moodle"
+sudo mkdir -p "$BACKUP_DIR"
+# Generate a random password for DBbackupuser
+DBbackupuserPW=$(openssl rand -base64 12)
+sudo useradd -m -d "/home/DBbackupuser" -s "/bin/bash" "DBbackupuser"
+echo "DBbackupuser:$DBbackupuserPW" | sudo chpasswd
+sudo usermod -aG mysql "DBbackupuser"
+# Create and set permissions for .my.cnf
+DBbackupuser_home="/home/DBbackupuser"
+mycnf_file="$DBbackupuser_home/.my.cnf"
+# Create .my.cnf file with correct permissions so passwords are not passed in scripts
+echo "[mysqldump]" | sudo tee "$mycnf_file" > /dev/null
+echo "user=DBbackupuser" | sudo tee -a "$mycnf_file" > /dev/null
+echo "password=$DBbackupuserPW" | sudo tee -a "$mycnf_file" > /dev/null
+sudo chmod 600 "$mycnf_file"
+sudo unset DBbackupuserPW
+sudo chown DBbackupuser:DBbackupuser "$mycnf_file"
+# Set permissions for the backup directory
+sudo chown -R DBbackupuser:DBbackupuser "$BACKUP_DIR"
+sudo chmod -R 700 "$BACKUP_DIR"
+
+
+# Step 8 Set up cron jobs
+# to run Moodle housekeeping every minue
+# to keep Moodle code up to date
+# to keep 5 days of database backups
+sudo chmod +x  "/opt/Moodle/security_update.sh"
+sudo chmod +x  "/opt/Moodle/mysql_backup.sh"
+# Add a cron job to run the update script nightly
+CRON_JOBS="* * * * * /var/www/moodle/admin/cli/cron.php >/dev/null ; 0 0 * * * su -c '/opt/Moodle/security_update.sh' www-data"
+(crontab -l ; echo "$CRON_JOBS") | crontab
+# CRON_JOB="0 0 * * * /bin/su -s /bin/bash -c '/opt/Moodle/mysql_backup.sh' DBbackupuser"
+##DEBUG every 15 minutes
+CRON_JOB="*/15 * * * * /bin/su -s /bin/bash -c '/opt/Moodle/mysql_backup.sh' DBbackupuser"
+# Add the mysql backup to the user's crontab
+(crontab -l ; echo "$CRON_JOB") | crontab
+# Step 8 Finished
+
 # Step 3  Create a Moodle Virtual Host File and call certbot for https encryption
 # Strip the 'http://' or 'https://' part from the web address
 FQDN_ADDRESS=$(echo "$WEBSITE_ADDRESS" | sed -e 's#^https\?://##')
@@ -142,6 +204,16 @@ cat << EOF | sudo tee /etc/apache2/sites-available/moodle.conf
 EOF
 sudo a2dissite 000-default.conf
 sudo a2ensite moodle.conf
+if [ "$FQDN" = "y" ]; then
+    if [ ! -d "/etc/letsencrypt" ]; then
+        echo "Setting up SSL Certificates for your website"
+        sudo ufw allow 'Apache Full'
+        sudo ufw delete allow 'Apache'
+        sudo certbot --apache
+        WEBSITE_ADDRESS="https://${FQDN_ADDRESS#http://}"
+    fi
+fi
+systemctl reload apache2
 sudo systemctl reload apache2
 echo "Step 3 has completed."
 
@@ -219,6 +291,9 @@ else
 
 fi
 #Step 5 has finished"
+
+# Run the MySQL secure installation script
+sudo mysql_secure_installation
 
 sudo cat /etc/moodle_installation/info.txt
 echo "For better security on web accessible sites, copy the contents of /etc/moodle_installation/info.txt to your password manager and delete the file"
