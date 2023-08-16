@@ -48,7 +48,7 @@ APT::Periodic::Unattended-Upgrade "1";
 EOF
 	# Restart the unattended-upgrades service
 	sudo systemctl restart unattended-upgrades
-	echo "Step 3 has completed."
+echo "Step 1 has completed."
  
 # Step 2 Get PHP and MariaDB version 
 # Select Moodle version and set database variables where necessary
@@ -134,27 +134,24 @@ else
 	exit 1
 fi
 echo "Cloning Moodle repository into /var/www/"
-sudo mkdir /var/www/moodle
+sudo git clone https://github.com/moodle/moodle.git /var/www/moodle
 cd /var/www/moodle
 sudo git pull origin $MoodleVersion
 echo "Step 2 has completed."
 
-# Step 5a  Create a user to run backups
+# Step 3  Create a user to run backups
 # Generate a random password for backupuser
 # Set backup directory and permissions
 BACKUP_DIR="/var/backups/moodle"
 sudo mkdir -p "$BACKUP_DIR"
 # Generate a random password for DBbackupuser
 DBbackupuserPW=$(openssl rand -base64 12)
-
 sudo useradd -m -d "/home/DBbackupuser" -s "/bin/bash" "DBbackupuser"
 echo "DBbackupuser:$DBbackupuserPW" | sudo chpasswd
 sudo usermod -aG mysql "DBbackupuser"
 # Create and set permissions for .my.cnf
 # Store the current user
 original_user=$(whoami)
-
-
 # Switch to the DBbackupuser user and pass the password variable
 sudo -u DBbackupuser bash <<EOF
 DBbackupuser_home="/home/DBbackupuser"
@@ -171,12 +168,12 @@ EOF
 
 # Switch back to the original user
 sudo -u "$original_user" echo "Switched back to user: $original_user"
-
 # Set permissions for the backup directory
 sudo chown -R DBbackupuser:DBbackupuser "$BACKUP_DIR"
 sudo chmod -R 700 "$BACKUP_DIR"
+# Step 3 has finished
 
-# Step 8 Set up cron jobs
+# Step 4 Set up cron jobs
 # to run Moodle housekeeping every minue
 # to keep Moodle code up to date
 # to keep 5 days of database backups
@@ -185,9 +182,9 @@ sudo chmod +x  "/opt/Moodle/mysql_backup.sh"
 sudo sh -c 'echo "* * * * * www-data /var/www/moodle/admin/cli/cron.php >/dev/null" >> /etc/crontab'
 sudo sh -c 'echo "0 0 * * * www-data /bin/bash /opt/Moodle/security_update.sh >/dev/null" >> /etc/crontab'
 sudo sh -c 'echo "0 0 * * * DBbackupuser /bin/bash /opt/Moodle/mysql_backup.sh >/dev/null" >> /etc/crontab'
-# Step 8 Finished
+# Step 4 Finished
 
-# Step 3  Create a Moodle Virtual Host File and call certbot for https encryption
+# Step 5  Create a Moodle Virtual Host File and call certbot for https encryption
 # Strip the 'http://' or 'https://' part from the web address
 FQDN_ADDRESS=$(echo "$WEBSITE_ADDRESS" | sed -e 's#^https\?://##')
 # Create a new moodle.conf file
@@ -215,9 +212,9 @@ if [ "$FQDN" = "y" ]; then
 fi
 systemctl reload apache2
 sudo systemctl reload apache2
-echo "Step 3 has completed."
+echo "Step 5 has completed."
 
-# Step 4 Directories, ownership, permissions and php.ini required by 
+# Step 6 Directories, ownership, permissions and php.ini required by 
 sudo mkdir -p /var/www/moodledata
 sudo chown -R $WEB_SERVER_USER /var/www/moodledata
 sudo chmod -R 777 /var/www/moodledata
@@ -232,9 +229,21 @@ sudo sed -i 's/.*post_max_size =.*/post_max_size = 80M/' "$PHP_CONFIG_DIR/apache
 sudo sed -i 's/.*upload_max_filesize =.*/upload_max_filesize = 80M/' "$PHP_CONFIG_DIR/apache2/php.ini"
 # Restart the web server based on distribution
 sudo service apache2 restart
-# Step 4 Directories, ownership, permissions completed
+# Step 6 Directories, ownership, permissions completed
 
-# Step 5 Set the MySQL service and create the database and user for Moodle
+# Step 7 Install adminer, phpmyadmin alternative
+cd /var/www/moodle/local
+# Clone the local_adminer repository from Git
+sudo git clone https://github.com/grabs/moodle-local_adminer.git
+# Rename the cloned directory to match the expected plugin directory name
+sudo mv moodle-local_adminer adminer
+# Change into the plugin directory
+cd adminer
+# Update the plugin (pull any changes from the repository)
+sudo git pull origin master
+#Step 7 Install adminer finished
+
+# Step 8 Set the MySQL service and create the database and user for Moodle
 MYSQL_MOODLEUSER_PASSWORD=$(openssl rand -base64 6)
 MOODLE_ADMIN_PASSWORD=$(openssl rand -base64 6)
 # Set the root password using mysqladmin
@@ -258,9 +267,9 @@ sudo bash -c "echo 'Moodle SQL user password: $MYSQL_MOODLEUSER_PASSWORD' >> /et
 sudo bash -c "echo 'The following password is used by admin to log on to Moodle' >> /etc/moodle_installation/info.txt"
 sudo bash -c "echo 'Moodle Site Password for admin: $MOODLE_ADMIN_PASSWORD' >> /etc/moodle_installation/info.txt"
 cat /etc/moodle_installation/info.txt
-echo "Step 5 Database setup has completed."
+echo "Step 8 Database setup has completed."
 
-## Secure the installation
+
 
 #Step 9 Finish the install 
 echo "The script will now try to finish the installation. If this fails, log on to your site at $WEBSITE_ADDRESS and follow the prompts."
@@ -290,7 +299,7 @@ else
     echo "Error: Moodle installation encountered an error. Go to $WEBSITE_ADDRESS and follow the prompts to complete the installation."
 
 fi
-#Step 5 has finished"
+#Step 9 has finished"
 
 # Run the MySQL secure installation script
 sudo mysql_secure_installation
