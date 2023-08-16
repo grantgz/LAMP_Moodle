@@ -158,52 +158,10 @@ if [[ $MoodleVersion != "MOODLE_35_STABLE" && $MoodleVersion != "MOODLE_37_STABL
 fi
 echo "Step 2 has completed."
 
-# Step 3  Create a user to run backups
-# Generate a random password for backupuser
-# Set backup directory and permissions
-BACKUP_DIR="/var/backups/moodle"
-sudo mkdir -p "$BACKUP_DIR"
-# Generate a random password for DBbackupuser
-DBbackupuserPW=$(openssl rand -base64 12)
-sudo useradd -m -d "/home/DBbackupuser" -s "/bin/bash" "DBbackupuser"
-echo "DBbackupuser:$DBbackupuserPW" | sudo chpasswd
-sudo usermod -aG mysql "DBbackupuser"
-# Create and set permissions for .my.cnf
-# Store the current user
-original_user=$(whoami)
-# Switch to the DBbackupuser user and pass the password variable
-sudo -u DBbackupuser bash <<EOF
-DBbackupuser_home="/home/DBbackupuser"
-mycnf_file="\$DBbackupuser_home/.my.cnf"  # Use \$ to prevent interpolation
-DBbackupuserPW="$DBbackupuserPW"  # Pass the password variable
-# Create .my.cnf file with correct permissions so passwords are not passed in scripts
-echo "[mysqldump]" > "\$mycnf_file"
-echo "user=DBbackupuser" >> "\$mycnf_file"
-echo "password=\$DBbackupuserPW" >> "\$mycnf_file"
-chmod 600 "\$mycnf_file"
-unset DBbackupuserPW
-chown DBbackupuser:DBbackupuser "\$mycnf_file"
-EOF
 
-# Switch back to the original user
-sudo -u "$original_user" echo "Switched back to user: $original_user"
-# Set permissions for the backup directory
-sudo chown -R DBbackupuser:DBbackupuser "$BACKUP_DIR"
-sudo chmod -R 700 "$BACKUP_DIR"
-# Step 3 has finished
 
-# Step 4 Set up cron jobs
-# to run Moodle housekeeping every minue
-# to keep Moodle code up to date
-# to keep 5 days of database backups
-sudo chmod +x  "/opt/Moodle/security_update.sh"
-sudo chmod +x  "/opt/Moodle/mysql_backup.sh"
-sudo sh -c 'echo "* * * * * www-data /var/www/moodle/admin/cli/cron.php >/dev/null" >> /etc/crontab'
-sudo sh -c 'echo "0 0 * * * www-data /bin/bash /opt/Moodle/security_update.sh >/dev/null" >> /etc/crontab'
-sudo sh -c 'echo "0 0 * * * DBbackupuser /bin/bash /opt/Moodle/mysql_backup.sh >/dev/null" >> /etc/crontab'
-# Step 4 Finished
 
-# Step 5  Create a Moodle Virtual Host File and call certbot for https encryption
+# Step 3  Create a Moodle Virtual Host File and call certbot for https encryption
 # Strip the 'http://' or 'https://' part from the web address
 FQDN_ADDRESS=$(echo "$WEBSITE_ADDRESS" | sed -e 's#^https\?://##')
 # Create a new moodle.conf file
@@ -230,9 +188,9 @@ if [ "$FQDN" = "y" ]; then
     fi
 fi
 sudo systemctl reload apache2
-echo "Step 5 has completed."
+echo "Step 3 has completed."
 
-# Step 6 Directories, ownership, permissions and php.ini required by 
+# Step 4 Directories, ownership, permissions and php.ini required by 
 sudo mkdir -p /var/www/moodledata
 sudo chown -R $WEB_SERVER_USER /var/www/moodledata
 sudo chmod -R 777 /var/www/moodledata
@@ -247,7 +205,53 @@ sudo sed -i 's/.*post_max_size =.*/post_max_size = 80M/' "$PHP_CONFIG_DIR/apache
 sudo sed -i 's/.*upload_max_filesize =.*/upload_max_filesize = 80M/' "$PHP_CONFIG_DIR/apache2/php.ini"
 # Restart the web server based on distribution
 sudo service apache2 restart
-# Step 6 Directories, ownership, permissions completed
+# Step 5 Directories, ownership, permissions completed
+
+# Step 6  Create a user to run backups
+# Generate a random password for backupuser
+# Set backup directory and permissions
+BACKUP_DIR="/var/backups/moodle"
+sudo mkdir -p "$BACKUP_DIR"
+# Generate a random password for DBbackupuser
+DBbackupuserPW=$(openssl rand -base64 12)
+SQLbackupuserPW=$(openssl rand -base64 12)
+sudo useradd -m -d "/home/DBbackupuser" -s "/bin/bash" "DBbackupuser"
+echo "DBbackupuser:$DBbackupuserPW" | sudo chpasswd
+sudo usermod -aG mysql "DBbackupuser"
+# Create and set permissions for .my.cnf
+# Store the current user
+original_user=$(whoami)
+# Switch to the DBbackupuser user and pass the password variable
+sudo -u DBbackupuser bash <<EOF
+DBbackupuser_home="/home/DBbackupuser"
+mycnf_file="\$DBbackupuser_home/.my.cnf"  # Use \$ to prevent interpolation
+DBbackupuserPW="$DBbackupuserPW"  # Pass the password variable
+# Create .my.cnf file with correct permissions so passwords are not passed in scripts
+echo "[mysqldump]" > "\$mycnf_file"
+echo "user=SQLbackupuser" >> "\$mycnf_file"
+echo "password=\$SQLbackupuserPW" >> "\$mycnf_file"
+chmod 600 "\$mycnf_file"
+unset DBbackupuserPW
+chown DBbackupuser:DBbackupuser "\$mycnf_file"
+EOF
+
+# Switch back to the original user
+sudo -u "$original_user" echo "Switched back to user: $original_user"
+# Set permissions for the backup directory
+sudo chown -R DBbackupuser:DBbackupuser "$BACKUP_DIR"
+sudo chmod -R 700 "$BACKUP_DIR"
+
+#  Set up cron jobs
+# to run Moodle housekeeping every minue
+# to keep Moodle code up to date
+# to keep 5 days of database backups
+sudo chmod +x  "/opt/Moodle/security_update.sh"
+sudo chmod +x  "/opt/Moodle/mysql_backup.sh"
+sudo sh -c 'echo "* * * * * www-data /var/www/moodle/admin/cli/cron.php >/dev/null" >> /etc/crontab'
+sudo sh -c 'echo "0 0 * * * www-data /bin/bash /opt/Moodle/security_update.sh >/dev/null" >> /etc/crontab'
+sudo sh -c 'echo "0 0 * * * DBbackupuser /bin/bash /opt/Moodle/mysql_backup.sh >/dev/null" >> /etc/crontab'
+# Step 6 has finished
+
 
 # Step 7 Set the MySQL service and create the database and user for Moodle
 MYSQL_MOODLEUSER_PASSWORD=$(openssl rand -base64 6)
@@ -260,6 +264,8 @@ sudo mysql   <<EOF
 CREATE DATABASE moodle DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER 'moodleuser'@'localhost' IDENTIFIED BY '$MYSQL_MOODLEUSER_PASSWORD';
 GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, CREATE TEMPORARY TABLES, DROP, INDEX, ALTER ON moodle.* TO 'moodleuser'@'localhost';
+CREATE USER 'SQLbackupuser'@'localhost' IDENTIFIED BY '$SQLbackupuserPW';
+GRANT SELECT ON moodle.* TO 'DBbackupuser'@'localhost';
 \q
 EOF
 sudo chmod -R 777 /var/www/moodle
