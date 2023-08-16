@@ -139,6 +139,23 @@ sudo git clone https://github.com/moodle/moodle.git
 cd moodle
 sudo git checkout -t origin/$MoodleVersion
 git config pull.ff only
+# Check if the Moodle version is not in the list of incompatible versions
+if [[ $MoodleVersion != "MOODLE_35_STABLE" && $MoodleVersion != "MOODLE_37_STABLE" && $MoodleVersion != "MOODLE_38_STABLE" ]]; then
+    # Change to the Moodle local directory
+    cd /var/www/moodle/local
+
+    # Clone the local_adminer repository from Git
+    sudo git clone https://github.com/grabs/moodle-local_adminer.git
+
+    # Rename the cloned directory to match the expected plugin directory name
+    sudo mv moodle-local_adminer adminer
+
+    # Change into the plugin directory
+    cd adminer
+
+    # Update the plugin (pull any changes from the repository)
+    sudo git pull origin master
+fi
 echo "Step 2 has completed."
 
 # Step 3  Create a user to run backups
@@ -212,7 +229,6 @@ if [ "$FQDN" = "y" ]; then
         WEBSITE_ADDRESS="https://${FQDN_ADDRESS#http://}"
     fi
 fi
-systemctl reload apache2
 sudo systemctl reload apache2
 echo "Step 5 has completed."
 
@@ -233,19 +249,7 @@ sudo sed -i 's/.*upload_max_filesize =.*/upload_max_filesize = 80M/' "$PHP_CONFI
 sudo service apache2 restart
 # Step 6 Directories, ownership, permissions completed
 
-# Step 7 Install adminer, phpmyadmin alternative
-cd /var/www/moodle/local
-# Clone the local_adminer repository from Git
-sudo git clone https://github.com/grabs/moodle-local_adminer.git
-# Rename the cloned directory to match the expected plugin directory name
-sudo mv moodle-local_adminer adminer
-# Change into the plugin directory
-cd adminer
-# Update the plugin (pull any changes from the repository)
-sudo git pull origin master
-#Step 7 Install adminer finished
-
-# Step 8 Set the MySQL service and create the database and user for Moodle
+# Step 7 Set the MySQL service and create the database and user for Moodle
 MYSQL_MOODLEUSER_PASSWORD=$(openssl rand -base64 6)
 MOODLE_ADMIN_PASSWORD=$(openssl rand -base64 6)
 # Set the root password using mysqladmin
@@ -269,11 +273,10 @@ sudo bash -c "echo 'Moodle SQL user password: $MYSQL_MOODLEUSER_PASSWORD' >> /et
 sudo bash -c "echo 'The following password is used by admin to log on to Moodle' >> /etc/moodle_installation/info.txt"
 sudo bash -c "echo 'Moodle Site Password for admin: $MOODLE_ADMIN_PASSWORD' >> /etc/moodle_installation/info.txt"
 cat /etc/moodle_installation/info.txt
-echo "Step 8 Database setup has completed."
+echo "Step 7 Database setup has completed."
 
 
-
-#Step 9 Finish the install 
+#Step 8 Finish the install 
 echo "The script will now try to finish the installation. If this fails, log on to your site at $WEBSITE_ADDRESS and follow the prompts."
 INSTALL_COMMAND="sudo -u $WEB_SERVER_USER /usr/bin/php /var/www/moodle/admin/cli/install.php \
     --non-interactive \
@@ -301,7 +304,7 @@ else
     echo "Error: Moodle installation encountered an error. Go to $WEBSITE_ADDRESS and follow the prompts to complete the installation."
 
 fi
-#Step 9 has finished"
+#Step 8 has finished"
 
 # Run the MySQL secure installation script
 sudo mysql_secure_installation
