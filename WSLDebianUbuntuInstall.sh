@@ -134,9 +134,11 @@ else
 	exit 1
 fi
 echo "Cloning Moodle repository into /var/www/"
-sudo git clone https://github.com/moodle/moodle.git /var/www/moodle
-cd /var/www/moodle
-sudo git pull origin $MoodleVersion
+cd /var/www
+sudo git clone https://github.com/moodle/moodle.git
+cd moodle
+sudo git checkout -t origin/$MoodleVersion
+git config pull.ff only
 echo "Step 2 has completed."
 
 # Step 3  Create a user to run backups
