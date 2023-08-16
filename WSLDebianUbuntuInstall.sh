@@ -225,7 +225,7 @@ original_user=$(whoami)
 sudo -u DBbackupuser bash <<EOF
 DBbackupuser_home="/home/DBbackupuser"
 mycnf_file="\$DBbackupuser_home/.my.cnf"  # Use \$ to prevent interpolation
-DBbackupuserPW="$DBbackupuserPW"  # Pass the password variable
+SQLbackupuserPW="$SQLbackupuserPW"  # Pass the password variable
 # Create .my.cnf file with correct permissions so passwords are not passed in scripts
 echo "[mysqldump]" > "\$mycnf_file"
 echo "user=SQLbackupuser" >> "\$mycnf_file"
