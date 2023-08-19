@@ -178,14 +178,12 @@ cat << EOF | sudo tee /etc/apache2/sites-available/moodle.conf
 EOF
 sudo a2dissite 000-default.conf
 sudo a2ensite moodle.conf
-if [ "$FQDN" = "y" ]; then
-    if [ ! -d "/etc/letsencrypt" ]; then
+if [ "$FQDN" = "y" ]; then    
         echo "Setting up SSL Certificates for your website"
         sudo ufw allow 'Apache Full'
         sudo ufw delete allow 'Apache'
         sudo certbot --apache
         WEBSITE_ADDRESS="https://${FQDN_ADDRESS#http://}"
-    fi
 fi
 sudo systemctl reload apache2
 echo "Step 3 has completed."
