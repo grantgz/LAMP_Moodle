@@ -155,9 +155,20 @@ if [[ $MoodleVersion != "MOODLE_35_STABLE" && $MoodleVersion != "MOODLE_37_STABL
 
     # Update the plugin (pull any changes from the repository)
     sudo git pull origin master
+    
+    # Change to the Moodle root directory
+	cd /var/www/moodle
+
+	# Clone the moodle-report_benchmark repository from Git
+	sudo git clone https://github.com/mikasmart/moodle-report_benchmark.git report/benchmark
+
+	# Change into the benchmark directory
+	cd report/benchmark
+
+	# Update the plugin (pull any changes from the repository)
+	sudo git pull origin master
 fi
 echo "Step 2 has completed."
-
 
 
 
@@ -245,6 +256,8 @@ sudo chmod -R 700 "$BACKUP_DIR"
 # to keep 5 days of database backups
 sudo chmod +x  "/opt/Moodle/security_update.sh"
 sudo chmod +x  "/opt/Moodle/mysql_backup.sh"
+sudo chown :www-data /var/www/moodle-update.log
+sudo chmod g+w /var/www/moodle-update.log
 sudo sh -c 'echo "* * * * * www-data /var/www/moodle/admin/cli/cron.php >/dev/null" >> /etc/crontab'
 sudo sh -c 'echo "0 0 * * * www-data /bin/bash /opt/Moodle/security_update.sh >/dev/null" >> /etc/crontab'
 sudo sh -c 'echo "0 0 * * * DBbackupuser /bin/bash /opt/Moodle/mysql_backup.sh >/dev/null" >> /etc/crontab'
