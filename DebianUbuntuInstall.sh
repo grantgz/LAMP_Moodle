@@ -247,7 +247,6 @@ unset DBbackupuserPW
 chown DBbackupuser:DBbackupuser "\$mycnf_file"
 EOF
 
-
 # Switch back to the original user
 sudo -u "$original_user" echo "Switched back to user: $original_user"
 # Set permissions for the backup directory
