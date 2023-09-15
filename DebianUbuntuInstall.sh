@@ -239,10 +239,14 @@ SQLbackupuserPW="$SQLbackupuserPW"  # Pass the password variable
 echo "[mysqldump]" > "\$mycnf_file"
 echo "user=SQLbackupuser" >> "\$mycnf_file"
 echo "password=\$SQLbackupuserPW" >> "\$mycnf_file"
+echo "[client]" > "$mycnf_file"
+echo "user=SQLbackupuser" >> "$mycnf_file"
+echo "password=$SQLbackupuserPW" >> "$mycnf_file"
 chmod 600 "\$mycnf_file"
 unset DBbackupuserPW
 chown DBbackupuser:DBbackupuser "\$mycnf_file"
 EOF
+
 
 # Switch back to the original user
 sudo -u "$original_user" echo "Switched back to user: $original_user"
@@ -256,6 +260,7 @@ sudo chmod -R 700 "$BACKUP_DIR"
 # to keep 5 days of database backups
 sudo chmod +x  "/opt/Moodle/security_update.sh"
 sudo chmod +x  "/opt/Moodle/mysql_backup.sh"
+sudo touch /var/www/moodle-update.log
 sudo chown :www-data /var/www/moodle-update.log
 sudo chmod g+w /var/www/moodle-update.log
 sudo sh -c 'echo "* * * * * www-data /var/www/moodle/admin/cli/cron.php >/dev/null" >> /etc/crontab'
